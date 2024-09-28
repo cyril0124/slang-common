@@ -311,6 +311,30 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
         PRINT_INFO_AND_VISIT();
     }
 
+    void handle(const PortSymbol &ast) {
+        PREFIX_CODE();
+
+        auto &port         = ast.as<PortSymbol>();
+        auto &pType        = port.getType();
+        auto &dir          = port.direction;
+        auto &internalKind = port.internalSymbol->kind;
+        auto &pTypeKind    = pType.kind;
+
+        extra += fmt::format(" portName: {} dir: {} internalKind: {} portWidth: {} portType: {} portTypeKind: {}", port.name, toString(port.direction), toString(internalKind), pType.getBitWidth(), pType.toString(), toString(pType.kind));
+
+        if (internalKind == SymbolKind::Net) {
+            auto &net  = port.internalSymbol->as<NetSymbol>();
+            auto dType = net.netType.getDataType().toString();
+            extra += fmt::format(" dataType: {}", dType);
+        } else if (internalKind == SymbolKind::Variable) {
+            auto &var = port.internalSymbol->as<VariableSymbol>();
+        } else {
+            // TODO: handle other kinds
+        }
+
+        PRINT_INFO_AND_VISIT();
+    }
+
     void handle(const VariableSymbol &ast) {
         PREFIX_CODE();
         auto varName = ast.name;
