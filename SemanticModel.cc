@@ -1,3 +1,5 @@
+#include <cassert>
+#include <iostream>
 #include "SemanticModel.h"
 #include "fmt/color.h"
 #include "slang/ast/Symbol.h"
@@ -145,5 +147,38 @@ std::pair<const Scope*, const Symbol*> SemanticModel::getParent(const SyntaxNode
         return {nullptr, parent};
 
     return {&parent->as<Scope>(), parent};
+}
+
+const InstanceSymbol *SemanticModel::syntaxToInstanceSymbol(const syntax::SyntaxNode &syntax) {
+    auto currSyntax = &syntax;
+    uint32_t iter   = 0;
+    while (currSyntax->kind != SyntaxKind::ModuleDeclaration) {
+        currSyntax = currSyntax->parent;
+        iter++;
+        if (iter >= 1000) {
+            assert(false && "cannot found any module declaration syntax!");
+        }
+    }
+    auto r      = &compilation.getRoot();
+    auto &rs    = r->as<Scope>();
+    auto def    = compilation.getDefinition(rs, currSyntax->as<ModuleDeclarationSyntax>());
+    auto result = &InstanceSymbol::createDefault(compilation, *def);
+    return result;
+}
+
+const NetSymbol &SemanticModel::getNetSymbol(const InstanceSymbol *instSym, std::string_view identifierName) {
+    for (auto &sym : instSym->body.members()) {
+        if (sym.kind == SymbolKind::Net) {
+            auto &netSym = sym.as<NetSymbol>();
+            if (netSym.name == identifierName) {
+                return netSym;
+            }
+        }
+    }
+
+    std::cout << "Assertion failed: Not found NetSymbol! " 
+                << "Identifier: " << identifierName << std::endl;
+        
+    assert(false);
 }
 // clang-format on

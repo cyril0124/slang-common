@@ -36,18 +36,20 @@ bool checkDiagsError(Diagnostics &diags) {
     return false;
 }
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree) {
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree) {
     auto newTree = SyntaxTree::fromFileInMemory(SyntaxPrinter::printFile(oldTree), SyntaxTree::getDefaultSourceManager());
     if (newTree->diagnostics().empty() == false) {
         auto diags = newTree->diagnostics();
         if (checkDiagsError(diags)) {
             auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
-            fmt::println("{}", ret);
+            fmt::println("[rebuildSyntaxTree] SyntaxError: {}", ret);
 
-            fmt::println("tree => {}", SyntaxPrinter::printFile(oldTree));
-
+            if (printTree) {
+                fmt::println("[rebuildSyntaxTree] SyntaxError tree => {}", SyntaxPrinter::printFile(oldTree));
+            }
+            
             // Syntax error
-            assert(false);
+            assert(false && "[rebuildSyntaxTree] Syntax error");
         }
     } else {
         Compilation compilation;
@@ -56,12 +58,14 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree) {
         if (diags.empty() == false) {
             if (checkDiagsError(diags)) {
                 auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
-                fmt::println("{}", ret);
+                fmt::println("[rebuildSyntaxTree] CompilationError: {}", ret);
 
-                // fmt::println("tree => {}", SyntaxPrinter::printFile(oldTree));
+                if (printTree) {
+                    fmt::println("[rebuildSyntaxTree] CompilationError tree => {}", SyntaxPrinter::printFile(oldTree));
+                }
 
                 // Compilation error
-                assert(false);
+                assert(false && "[rebuildSyntaxTree] Compilation error");
             }
         }
     }

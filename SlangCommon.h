@@ -28,7 +28,7 @@ namespace slang_common {
 
 bool checkDiagsError(Diagnostics &diags);
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree);
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false);
 
 void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);
 
