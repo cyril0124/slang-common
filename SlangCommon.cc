@@ -43,9 +43,11 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
         if (checkDiagsError(diags)) {
             auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
             fmt::println("[rebuildSyntaxTree] SyntaxError: {}", ret);
+            fflush(stdout);
 
             if (printTree) {
                 fmt::println("[rebuildSyntaxTree] SyntaxError tree => {}", SyntaxPrinter::printFile(oldTree));
+                fflush(stdout);
             }
             
             // Syntax error
@@ -59,9 +61,11 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
             if (checkDiagsError(diags)) {
                 auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
                 fmt::println("[rebuildSyntaxTree] CompilationError: {}", ret);
+                fflush(stdout);
 
                 if (printTree) {
                     fmt::println("[rebuildSyntaxTree] CompilationError tree => {}", SyntaxPrinter::printFile(oldTree));
+                    fflush(stdout);
                 }
 
                 // Compilation error
@@ -400,6 +404,36 @@ const DefinitionSymbol *getDefSymbol(std::shared_ptr<SyntaxTree> tree, const Mod
 const InstanceSymbol *getInstSymbol(Compilation &compilation, const ModuleDeclarationSyntax &syntax) {
     auto def = compilation.getDefinition(compilation.getRoot(), syntax);
     return &InstanceSymbol::createDefault(compilation, def->as<DefinitionSymbol>());
+}
+
+const SyntaxNode *getNetDeclarationSyntax(const SyntaxNode *node, std::string_view identifierName, bool reverse) {
+    if (node == nullptr) {
+        return nullptr;
+    }
+
+    if (node->kind == SyntaxKind::NetDeclaration) {
+        auto &netDeclSyn = node->as<NetDeclarationSyntax>();
+        auto t           = netDeclSyn.declarators[0]->as<DeclaratorSyntax>().name.rawText();
+        if (t == identifierName) {
+            return node;
+        }
+    }
+
+    if (reverse) {
+        // from node to parent node
+        return getNetDeclarationSyntax(node->parent, identifierName, reverse);
+    } else {
+        // from node to child nodes
+        for (uint32_t i = 0; i < node->getChildCount(); i++) {
+            auto childNode = node->childNode(i);
+            auto newNode   = getNetDeclarationSyntax(childNode, identifierName);
+            if (newNode != nullptr) {
+                return newNode;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 } // namespace slang_common

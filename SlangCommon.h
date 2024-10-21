@@ -42,4 +42,5 @@ const DefinitionSymbol *getDefSymbol(std::shared_ptr<SyntaxTree> tree, const Mod
 
 const InstanceSymbol *getInstSymbol(Compilation &compilation, const ModuleDeclarationSyntax &syntax);
 
+const SyntaxNode *getNetDeclarationSyntax(const SyntaxNode *node, std::string_view identifierName, bool reverse = false);
 } // namespace slang_common
