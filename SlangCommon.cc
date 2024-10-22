@@ -143,6 +143,15 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
         PRINT_INFO_AND_VISIT();
     }
 
+    void handle(const PortConnectionSyntax &syn) {
+        PREFIX_CODE();
+
+        extra += " PortConnection: ";
+        extra += syn.toString();
+
+        PRINT_INFO_AND_VISIT();
+    }
+
     /*
         BinaryExpressionSyntax:
             vec <= a + b
@@ -227,6 +236,9 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
         }
         return result;
     }
+#undef SYNTAX_NAME()
+#undef PREFIX_CODE()
+#undef PRINT_INFO_AND_VISIT()
 };
 
 // Helper template to detect the presence of a method
@@ -364,6 +376,9 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
         }
         return result;
     }
+#undef AST_NAME()
+#undef PREFIX_CODE()
+#undef PRINT_INFO_AND_VISIT()
 };
 
 void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth = 1000) {
