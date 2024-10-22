@@ -143,15 +143,6 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
         PRINT_INFO_AND_VISIT();
     }
 
-    void handle(const PortConnectionSyntax &syn) {
-        PREFIX_CODE();
-
-        extra += " PortConnection: ";
-        extra += syn.toString();
-
-        PRINT_INFO_AND_VISIT();
-    }
-
     /*
         BinaryExpressionSyntax:
             vec <= a + b
