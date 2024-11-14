@@ -153,6 +153,16 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
         PRINT_INFO_AND_VISIT();
     }
 
+    void handle(const IdentifierSelectNameSyntax &syn) {
+        PREFIX_CODE();
+
+        extra += " name: ";
+        extra += syn.identifier.rawText();
+        extra += " ";
+
+        PRINT_INFO_AND_VISIT();
+    }
+
     /*
         BinaryExpressionSyntax:
             vec <= a + b
