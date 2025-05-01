@@ -1,1 +1,6 @@
 .clangd
+.vscode
+.xmake
+build
+conan_installed
+bin
