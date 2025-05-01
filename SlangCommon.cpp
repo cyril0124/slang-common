@@ -35,13 +35,13 @@ bool checkDiagsError(Diagnostics &diags) {
     return false;
 }
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree) {
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager()) {
     auto oldTreeStr = SyntaxPrinter::printFile(oldTree);
-    auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, SyntaxTree::getDefaultSourceManager());
+    auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, sourceManager, "slang_common::rebuildSyntaxTree"sv);
     if (newTree->diagnostics().empty() == false) {
         auto diags = newTree->diagnostics();
         if (checkDiagsError(diags)) {
-            auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
+            auto ret = DiagnosticEngine::reportAll(sourceManager, diags);
             fmt::println(R"(
 === [slang_common::rebuildSyntaxTree] SYNTAX ERROR ===
 {}
@@ -68,7 +68,7 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
         auto diags = compilation.getAllDiagnostics();
         if (diags.empty() == false) {
             if (checkDiagsError(diags)) {
-                auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
+                auto ret = DiagnosticEngine::reportAll(sourceManager, diags);
                 fmt::println(R"(
 === [slang_common::rebuildSyntaxTree] COMPILATION ERROR ===
 {}
