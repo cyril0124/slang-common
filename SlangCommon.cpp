@@ -1,6 +1,5 @@
 #include "SlangCommon.h"
-#include "fmt/color.h"
-#include "fmt/format.h"
+#include "fmt/core.h"
 #include "slang/ast/ASTVisitor.h"
 #include "slang/ast/expressions/AssignmentExpressions.h"
 #include "slang/ast/symbols/CompilationUnitSymbols.h"
@@ -49,7 +48,7 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
                 fmt::println("[rebuildSyntaxTree] SyntaxError tree => {}", SyntaxPrinter::printFile(oldTree));
                 fflush(stdout);
             }
-            
+
             // Syntax error
             assert(false && "[rebuildSyntaxTree] Syntax error");
         }
@@ -247,9 +246,9 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
         }
         return result;
     }
-#undef SYNTAX_NAME()
-#undef PREFIX_CODE()
-#undef PRINT_INFO_AND_VISIT()
+#undef SYNTAX_NAME
+#undef PREFIX_CODE
+#undef PRINT_INFO_AND_VISIT
 };
 
 // Helper template to detect the presence of a method
@@ -267,43 +266,41 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
 
     ASTLister(uint64_t maxDepth = 10000) : maxDepth(maxDepth) {}
 
-    // clang-format off
-    #define AST_NAME() \
-        extra += "\tastName: "; \
-        auto name = boost::typeindex::type_id<decltype(ast)>().pretty_name(); \
-        extra += std::string(name); \
-        extra += " "; \
-        extra += "\tsynKindName: ";  \
-        if constexpr (has_getSyntax<decltype(ast)>::value) { \
-            const auto syn = ast.getSyntax(); \
-            if (syn != nullptr) { \
-                auto synKind = syn->kind; \
-                extra += toString(synKind); \
-            } else { \
-                extra += "Null"; \
-            } \
-        } else { \ 
-            extra += "None"; \
-        }
+#define AST_NAME()                                                                                                                                                                                                                                                                                                                                                                                             \
+    extra += "\tastName: ";                                                                                                                                                                                                                                                                                                                                                                                    \
+    auto name = boost::typeindex::type_id<decltype(ast)>().pretty_name();                                                                                                                                                                                                                                                                                                                                      \
+    extra += std::string(name);                                                                                                                                                                                                                                                                                                                                                                                \
+    extra += " ";                                                                                                                                                                                                                                                                                                                                                                                              \
+    extra += "\tsynKindName: ";                                                                                                                                                                                                                                                                                                                                                                                \
+    if constexpr (has_getSyntax<decltype(ast)>::value) {                                                                                                                                                                                                                                                                                                                                                       \
+        const auto syn = ast.getSyntax();                                                                                                                                                                                                                                                                                                                                                                      \
+        if (syn != nullptr) {                                                                                                                                                                                                                                                                                                                                                                                  \
+            auto synKind = syn->kind;                                                                                                                                                                                                                                                                                                                                                                          \
+            extra += toString(synKind);                                                                                                                                                                                                                                                                                                                                                                        \
+        } else {                                                                                                                                                                                                                                                                                                                                                                                               \
+            extra += "Null";                                                                                                                                                                                                                                                                                                                                                                                   \
+        }                                                                                                                                                                                                                                                                                                                                                                                                      \
+    } else {                                                                                                                                                                                                                                                                                                                                                                                                   \
+        extra += "None";                                                                                                                                                                                                                                                                                                                                                                                       \
+    }
 
-    #define PREFIX_CODE() \
-        if (depth > maxDepth) \
-            return; \
-        std::string prefix = createPrefix(); \
-        std::string extra = ""; \
-        AST_NAME();
+#define PREFIX_CODE()                                                                                                                                                                                                                                                                                                                                                                                          \
+    if (depth > maxDepth)                                                                                                                                                                                                                                                                                                                                                                                      \
+        return;                                                                                                                                                                                                                                                                                                                                                                                                \
+    std::string prefix = createPrefix();                                                                                                                                                                                                                                                                                                                                                                       \
+    std::string extra  = "";                                                                                                                                                                                                                                                                                                                                                                                   \
+    AST_NAME();
 
-    #define PRINT_INFO_AND_VISIT() \
-        do { \
-            fmt::println("{}[{}] depth: {}\tastKind: {}\t{}", prefix, count, depth, toString(ast.kind), extra); \
-            count++; \
-            lastChildStack.push_back(false); \
-            depth++; \
-            visitDefault(ast); \
-            lastChildStack.pop_back(); \
-            depth--; \
-        } while(0)
-    // clang-format on
+#define PRINT_INFO_AND_VISIT()                                                                                                                                                                                                                                                                                                                                                                                 \
+    do {                                                                                                                                                                                                                                                                                                                                                                                                       \
+        fmt::println("{}[{}] depth: {}\tastKind: {}\t{}", prefix, count, depth, toString(ast.kind), extra);                                                                                                                                                                                                                                                                                                    \
+        count++;                                                                                                                                                                                                                                                                                                                                                                                               \
+        lastChildStack.push_back(false);                                                                                                                                                                                                                                                                                                                                                                       \
+        depth++;                                                                                                                                                                                                                                                                                                                                                                                               \
+        visitDefault(ast);                                                                                                                                                                                                                                                                                                                                                                                     \
+        lastChildStack.pop_back();                                                                                                                                                                                                                                                                                                                                                                             \
+        depth--;                                                                                                                                                                                                                                                                                                                                                                                               \
+    } while (0)
 
     void handle(const auto &ast) {
         PREFIX_CODE();
@@ -387,9 +384,9 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
         }
         return result;
     }
-#undef AST_NAME()
-#undef PREFIX_CODE()
-#undef PRINT_INFO_AND_VISIT()
+#undef AST_NAME
+#undef PREFIX_CODE
+#undef PRINT_INFO_AND_VISIT
 };
 
 void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth = 1000) {
