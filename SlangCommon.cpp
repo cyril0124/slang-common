@@ -36,21 +36,31 @@ bool checkDiagsError(Diagnostics &diags) {
 }
 
 std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree) {
-    auto newTree = SyntaxTree::fromFileInMemory(SyntaxPrinter::printFile(oldTree), SyntaxTree::getDefaultSourceManager());
+    auto oldTreeStr = SyntaxPrinter::printFile(oldTree);
+    auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, SyntaxTree::getDefaultSourceManager());
     if (newTree->diagnostics().empty() == false) {
         auto diags = newTree->diagnostics();
         if (checkDiagsError(diags)) {
             auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
-            fmt::println("[rebuildSyntaxTree] SyntaxError: {}", ret);
+            fmt::println(R"(
+=== [slang_common::rebuildSyntaxTree] SYNTAX ERROR ===
+{}
+======================================================
+)",
+                         ret);
             fflush(stdout);
 
             if (printTree) {
-                fmt::println("[rebuildSyntaxTree] SyntaxError tree => {}", SyntaxPrinter::printFile(oldTree));
+                fmt::println(R"(
+=== [slang_common::rebuildSyntaxTree] ORIGINAL SYNTAX TREE ===
+{}
+==============================================================
+)",
+                             oldTreeStr);
                 fflush(stdout);
             }
 
-            // Syntax error
-            assert(false && "[rebuildSyntaxTree] Syntax error");
+            assert(false && "[slang_common::rebuildSyntaxTree] Syntax error during syntax tree reconstruction");
         }
     } else {
         Compilation compilation;
@@ -59,16 +69,25 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
         if (diags.empty() == false) {
             if (checkDiagsError(diags)) {
                 auto ret = DiagnosticEngine::reportAll(SyntaxTree::getDefaultSourceManager(), diags);
-                fmt::println("[rebuildSyntaxTree] CompilationError: {}", ret);
+                fmt::println(R"(
+=== [slang_common::rebuildSyntaxTree] COMPILATION ERROR ===
+{}
+===========================================================
+)",
+                             ret);
                 fflush(stdout);
 
                 if (printTree) {
-                    fmt::println("[rebuildSyntaxTree] CompilationError tree => {}", SyntaxPrinter::printFile(oldTree));
+                    fmt::println(R"(
+=== [slang_common::rebuildSyntaxTree] ORIGINAL SYNTAX TREE ===
+{}
+==============================================================
+)",
+                                 oldTreeStr);
                     fflush(stdout);
                 }
 
-                // Compilation error
-                assert(false && "[rebuildSyntaxTree] Compilation error");
+                assert(false && "[slang_common::rebuildSyntaxTree] Compilation error during syntax tree reconstruction");
             }
         }
     }
