@@ -1,31 +1,4 @@
 #include "SlangCommon.h"
-#include "fmt/core.h"
-#include "slang/ast/ASTVisitor.h"
-#include "slang/ast/Compilation.h"
-#include "slang/ast/expressions/AssignmentExpressions.h"
-#include "slang/ast/symbols/CompilationUnitSymbols.h"
-#include "slang/ast/symbols/InstanceSymbols.h"
-#include "slang/ast/symbols/VariableSymbols.h"
-#include "slang/diagnostics/Diagnostics.h"
-#include "slang/driver/Driver.h"
-#include "slang/numeric/Time.h"
-#include "slang/syntax/AllSyntax.h"
-#include "slang/syntax/SyntaxKind.h"
-#include "slang/syntax/SyntaxNode.h"
-#include "slang/syntax/SyntaxTree.h"
-#include "slang/util/LanguageVersion.h"
-#include <boost/type_index.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <vector>
 
 using namespace slang;
 using namespace slang::parsing;
