@@ -1,24 +1,31 @@
 #include "SlangCommon.h"
 #include "fmt/core.h"
 #include "slang/ast/ASTVisitor.h"
+#include "slang/ast/Compilation.h"
 #include "slang/ast/expressions/AssignmentExpressions.h"
 #include "slang/ast/symbols/CompilationUnitSymbols.h"
 #include "slang/ast/symbols/InstanceSymbols.h"
 #include "slang/ast/symbols/VariableSymbols.h"
 #include "slang/diagnostics/Diagnostics.h"
+#include "slang/driver/Driver.h"
 #include "slang/numeric/Time.h"
 #include "slang/syntax/AllSyntax.h"
 #include "slang/syntax/SyntaxKind.h"
 #include "slang/syntax/SyntaxNode.h"
 #include "slang/syntax/SyntaxTree.h"
 #include "slang/util/LanguageVersion.h"
+#include <boost/type_index.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <functional>
+#include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
-
-#include <boost/type_index.hpp>
+#include <string_view>
 #include <type_traits>
+#include <vector>
 
 using namespace slang;
 using namespace slang::parsing;
@@ -35,7 +42,7 @@ bool checkDiagsError(Diagnostics &diags) {
     return false;
 }
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager()) {
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager) {
     auto oldTreeStr = SyntaxPrinter::printFile(oldTree);
     auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, sourceManager, "slang_common::rebuildSyntaxTree"sv);
     if (newTree->diagnostics().empty() == false) {
@@ -93,6 +100,226 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
     }
 
     return newTree;
+}
+
+namespace file_manage {
+
+std::string backupFile(std::string_view inputFile, std::string workdir) {
+    std::filesystem::path _workdir(workdir);
+    std::filesystem::path path(inputFile);
+    std::string targetFile = std::string(workdir) + "/" + path.filename().string() + ".bak";
+
+    if (std::filesystem::exists(targetFile)) {
+        std::filesystem::remove(targetFile);
+    }
+    std::filesystem::copy_file(inputFile, targetFile.c_str());
+
+    INSERT_BEFORE_FILE_HEAD(targetFile, fmt::format("//BEGIN:{}", inputFile));
+    INSERT_AFTER_FILE_END(targetFile, fmt::format("//END:{}", inputFile));
+
+    return targetFile;
+}
+
+void generateNewFile(const std::string &content, const std::string &newPath) {
+    std::istringstream stream(content);
+    std::string line;
+    std::string currentFile;
+    std::ofstream outFile;
+    std::vector<std::string> buffer;
+
+    if (!newPath.empty()) {
+        if (!std::filesystem::exists(newPath)) {
+            std::filesystem::create_directories(newPath);
+        }
+    }
+
+    auto flushBuffer = [&]() {
+        if (!buffer.empty() && outFile.is_open()) {
+            for (const auto &l : buffer) {
+                outFile << l << '\n';
+            }
+            buffer.clear();
+        }
+    };
+
+    while (std::getline(stream, line)) {
+        if (line.find("//BEGIN:") == 0) {
+            flushBuffer();
+            currentFile = line.substr(8);
+
+            std::filesystem::path path = currentFile;
+            if (!newPath.empty()) {
+                currentFile = newPath + "/" + path.filename().string();
+            }
+
+            outFile.open(currentFile, std::ios::out | std::ios::trunc);
+            if (!outFile.is_open()) {
+                std::cerr << "Failed to open file: " << currentFile << std::endl;
+                assert(false);
+            }
+        } else if (line.find("//END:") == 0) {
+            flushBuffer();
+            if (outFile.is_open()) {
+                outFile.close();
+            }
+        } else {
+            if (outFile.is_open()) {
+                buffer.push_back(line);
+                if (buffer.size() >= 10000) {
+                    flushBuffer();
+                }
+            }
+        }
+    }
+
+    flushBuffer();
+    if (outFile.is_open()) {
+        outFile.close();
+    }
+}
+
+bool isFileNewer(const std::string &file1, const std::string &file2) {
+    try {
+        auto time1 = std::filesystem::last_write_time(file1);
+        auto time2 = std::filesystem::last_write_time(file2);
+
+        return time1 > time2;
+    } catch (const std::filesystem::filesystem_error &e) {
+        std::cerr << "[isFileNewer] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+} // namespace file_manage
+
+Driver::Driver(std::string name) : cmdLine(driver.cmdLine) {
+    this->name = name;
+    this->driver.cmdLine.add("-h,--help", showHelp, "Display available options");
+}
+
+Driver::~Driver() {}
+
+void Driver::addStandardArgs() {
+    driver.addStandardArgs();
+
+    // Include paths (override default include paths of slang)
+    driver.cmdLine.add(
+        "-I,--include-directory,+incdir",
+        [this](std::string_view value) {
+            if (auto ec = this->driver.sourceManager.addUserDirectories(value)) {
+                fmt::println("include directory '{}': {}", value, ec.message());
+            }
+
+            // Append the include directory into the default source manager which will be used by `slang_common::rebuildSyntaxTree()`.
+            // Without this, the include directories will not be considered when building the syntax tree.
+            this->emptySourceManager.addUserDirectories(value);
+
+            return "";
+        },
+        "Additional include search paths", "<dir-pattern>[,...]", CommandLineFlags::CommaList);
+
+    driver.cmdLine.add(
+        "--isystem",
+        [this](std::string_view value) {
+            if (auto ec = this->driver.sourceManager.addSystemDirectories(value)) {
+                fmt::println("system include directory '{}': {}", value, ec.message());
+            }
+
+            // The same as above, but for the default source manager
+            this->emptySourceManager.addSystemDirectories(value);
+
+            return "";
+        },
+        "Additional system include search paths", "<dir-pattern>[,...]", CommandLineFlags::CommaList);
+
+    driver.cmdLine.setPositional(
+        [this](std::string_view value) {
+            if (!this->driver.options.excludeExts.empty()) {
+                if (size_t extIndex = value.find_last_of('.'); extIndex != std::string_view::npos) {
+                    if (driver.options.excludeExts.count(std::string(value.substr(extIndex + 1))))
+                        return "";
+                }
+            }
+
+            if (value.ends_with(".f")) {
+                std::ifstream infile(value.data());
+                if (!infile) {
+                    fmt::println("Failed to open file: {}", value);
+                    assert(false);
+                } else {
+                    std::string line;
+                    while (std::getline(infile, line)) {
+                        if (!line.empty()) {
+                            this->files.push_back(line);
+                        }
+                    }
+                    infile.close();
+                }
+            }
+
+            this->files.push_back(std::string(value));
+            return "";
+        },
+        "files", {}, true);
+
+    driver.cmdLine.add("-h,--help", showHelp, "Display available options");
+}
+
+bool Driver::parseCommandLine(int argc, char **argv) {
+    auto success = driver.parseCommandLine(argc, argv);
+    if (showHelp) {
+        std::cout << fmt::format("{}\n", driver.cmdLine.getHelpText(name).c_str());
+        exit(0);
+    }
+    return success;
+}
+
+void Driver::loadAllSources(std::function<std::string(std::string_view)> fileTransform) {
+    auto totalFileCount = files.size();
+
+    for (int i = 0; i < totalFileCount; i++) {
+        auto file = files[i];
+
+        if (verbose) {
+            fmt::println("[{}] [{}/{}] get file: {}", name, i + 1, totalFileCount, file);
+        }
+
+        if (fileTransform == nullptr) {
+            driver.sourceLoader.addFiles(std::string_view(file));
+        } else {
+            driver.sourceLoader.addFiles(std::string_view(fileTransform(file)));
+        }
+    }
+
+    loadAllSourcesDone = true;
+}
+
+bool Driver::processOptions(bool singleUnit) {
+    driver.options.singleUnit = singleUnit;
+    return driver.processOptions();
+}
+
+bool Driver::parseAllSources() {
+    if (!loadAllSourcesDone) {
+        assert(false && "loadAllSources() must be called before parseAllSources()");
+    }
+
+    parseAllSourcesDone = true;
+    return driver.parseAllSources();
+}
+
+bool Driver::reportParseDiags() { return driver.reportParseDiags(); }
+
+std::unique_ptr<slang::ast::Compilation> Driver::createCompilation() { return driver.createCompilation(); }
+
+bool Driver::reportCompilation(slang::ast::Compilation &compilation, bool quiet) { return driver.reportCompilation(compilation, quiet); }
+
+std::unique_ptr<slang::ast::Compilation> Driver::createAndReportCompilation(bool quiet) {
+    auto compilation = this->createCompilation();
+    if (!this->reportCompilation(*compilation, quiet)) {
+        assert(false && "reportCompilation() failed");
+    }
+    return compilation;
 }
 
 class SynaxLister : public SyntaxVisitor<SynaxLister> {
