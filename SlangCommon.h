@@ -92,7 +92,12 @@ class Driver {
 
     void setName(std::string name) { this->name = name; }
     void setVerbose(bool verbose) { this->verbose = verbose; }
-    void addFiles(std::string_view file) { files.push_back(std::string(file)); }
+    void addFile(std::string_view file) { files.push_back(std::string(file)); }
+    void addFiles(std::vector<std::string> files) {
+        for (auto &file : files) {
+            this->files.push_back(file);
+        }
+    }
     std::vector<std::string> &getFiles() { return files; }
     slang::SourceManager &getEmptySourceManager() { return emptySourceManager; }
     slang::driver::Driver &getInternalDriver() { return driver; }
