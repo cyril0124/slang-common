@@ -389,6 +389,9 @@ std::unique_ptr<slang::ast::Compilation> Driver::createAndReportCompilation(bool
     return compilation;
 }
 
+// Wrap slang_common::rebuildSyntaxTree
+std::shared_ptr<SyntaxTree> Driver::rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree) { return slang_common::rebuildSyntaxTree(oldTree, printTree, this->getEmptySourceManager(), this->getBag()); }
+
 class SynaxLister : public SyntaxVisitor<SynaxLister> {
   public:
     const uint64_t maxDepth;
