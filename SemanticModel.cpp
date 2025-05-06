@@ -1,11 +1,11 @@
-#include <cassert>
-#include <iostream>
 #include "SemanticModel.h"
 #include "fmt/color.h"
 #include "slang/ast/Symbol.h"
 #include "slang/ast/symbols/VariableSymbols.h"
 #include "slang/syntax/AllSyntax.h"
 #include "slang/syntax/SyntaxKind.h"
+#include <cassert>
+#include <iostream>
 
 using namespace std;
 using namespace slang;

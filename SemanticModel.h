@@ -36,7 +36,7 @@ class SemanticModel {
     const NetSymbol *getDeclaredSymbol(const DeclaratorSyntax &syntax);
 
     const InstanceSymbol *syntaxToInstanceSymbol(const syntax::SyntaxNode &syntax);
-    
+
     const NetSymbol &getNetSymbol(const InstanceSymbol *instSym, std::string_view identifierName);
 
   private:
