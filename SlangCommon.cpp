@@ -15,9 +15,9 @@ bool checkDiagsError(Diagnostics &diags) {
     return false;
 }
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager) {
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager, const Bag &options) {
     auto oldTreeStr = SyntaxPrinter::printFile(oldTree);
-    auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, sourceManager, "slang_common::rebuildSyntaxTree"sv);
+    auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, sourceManager, "slang_common::rebuildSyntaxTree"sv, "", options);
     if (newTree->diagnostics().empty() == false) {
         auto diags = newTree->diagnostics();
         if (checkDiagsError(diags)) {
@@ -43,7 +43,7 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
             assert(false && "[slang_common::rebuildSyntaxTree] Syntax error during syntax tree reconstruction");
         }
     } else {
-        Compilation compilation;
+        Compilation compilation(options);
         compilation.addSyntaxTree(newTree);
         auto diags = compilation.getAllDiagnostics();
         if (diags.empty() == false) {
@@ -269,7 +269,101 @@ void Driver::loadAllSources(std::function<std::string(std::string_view)> fileTra
 
 bool Driver::processOptions(bool singleUnit) {
     driver.options.singleUnit = singleUnit;
-    return driver.processOptions();
+    bool success              = driver.processOptions();
+
+    auto &options = driver.options;
+
+    // Add parser options
+    {
+        slang::driver::SourceOptions soptions;
+        soptions.numThreads             = options.numThreads;
+        soptions.singleUnit             = options.singleUnit == true;
+        soptions.onlyLint               = options.lintMode();
+        soptions.librariesInheritMacros = options.librariesInheritMacros == true;
+
+        slang::parsing::PreprocessorOptions ppoptions;
+        ppoptions.predefines      = options.defines;
+        ppoptions.undefines       = options.undefines;
+        ppoptions.predefineSource = "<command-line>";
+        ppoptions.languageVersion = driver.languageVersion;
+        if (options.maxIncludeDepth.has_value())
+            ppoptions.maxIncludeDepth = *options.maxIncludeDepth;
+        for (const auto &d : options.ignoreDirectives)
+            ppoptions.ignoreDirectives.emplace(d);
+
+        slang::parsing::LexerOptions loptions;
+        loptions.languageVersion     = driver.languageVersion;
+        loptions.enableLegacyProtect = options.enableLegacyProtect == true;
+        if (options.maxLexerErrors.has_value())
+            loptions.maxErrors = *options.maxLexerErrors;
+
+        if (loptions.enableLegacyProtect)
+            loptions.commentHandlers["pragma"]["protect"] = {CommentHandler::Protect};
+
+        slang::parsing::ParserOptions poptions;
+        poptions.languageVersion = driver.languageVersion;
+        if (options.maxParseDepth.has_value())
+            poptions.maxRecursionDepth = *options.maxParseDepth;
+
+        bag.set(soptions);
+        bag.set(ppoptions);
+        bag.set(loptions);
+        bag.set(poptions);
+    }
+
+    // Add compilation options
+    {
+        slang::ast::CompilationOptions coptions;
+        coptions.flags           = slang::ast::CompilationFlags::None;
+        coptions.languageVersion = driver.languageVersion;
+        if (options.maxInstanceDepth.has_value())
+            coptions.maxInstanceDepth = *options.maxInstanceDepth;
+        if (options.maxGenerateSteps.has_value())
+            coptions.maxGenerateSteps = *options.maxGenerateSteps;
+        if (options.maxConstexprDepth.has_value())
+            coptions.maxConstexprDepth = *options.maxConstexprDepth;
+        if (options.maxConstexprSteps.has_value())
+            coptions.maxConstexprSteps = *options.maxConstexprSteps;
+        if (options.maxConstexprBacktrace.has_value())
+            coptions.maxConstexprBacktrace = *options.maxConstexprBacktrace;
+        if (options.maxInstanceArray.has_value())
+            coptions.maxInstanceArray = *options.maxInstanceArray;
+        if (options.maxUDPCoverageNotes.has_value())
+            coptions.maxUDPCoverageNotes = *options.maxUDPCoverageNotes;
+        if (options.errorLimit.has_value())
+            coptions.errorLimit = *options.errorLimit * 2;
+
+        for (auto &[flag, value] : options.compilationFlags) {
+            if (value == true)
+                coptions.flags |= flag;
+        }
+
+        if (options.lintMode())
+            coptions.flags |= slang::ast::CompilationFlags::SuppressUnused;
+
+        for (auto &name : options.topModules)
+            coptions.topModules.emplace(name);
+        for (auto &opt : options.paramOverrides)
+            coptions.paramOverrides.emplace_back(opt);
+        for (auto &lib : options.libraryOrder)
+            coptions.defaultLiblist.emplace_back(lib);
+
+        if (options.minTypMax.has_value()) {
+            if (options.minTypMax == "min")
+                coptions.minTypMax = slang::ast::MinTypMax::Min;
+            else if (options.minTypMax == "typ")
+                coptions.minTypMax = slang::ast::MinTypMax::Typ;
+            else if (options.minTypMax == "max")
+                coptions.minTypMax = slang::ast::MinTypMax::Max;
+        }
+
+        if (options.timeScale.has_value())
+            coptions.defaultTimeScale = slang::TimeScale::fromString(*options.timeScale);
+
+        bag.set(coptions);
+    }
+
+    return success;
 }
 
 bool Driver::parseAllSources() {

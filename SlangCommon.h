@@ -13,6 +13,9 @@
 #include "slang/diagnostics/TextDiagnosticClient.h"
 #include "slang/driver/Driver.h"
 #include "slang/numeric/Time.h"
+#include "slang/parsing/Lexer.h"
+#include "slang/parsing/Parser.h"
+#include "slang/parsing/Preprocessor.h"
 #include "slang/syntax/AllSyntax.h"
 #include "slang/syntax/SyntaxKind.h"
 #include "slang/syntax/SyntaxNode.h"
@@ -21,6 +24,7 @@
 #include "slang/syntax/SyntaxVisitor.h"
 #include "slang/text/SourceLocation.h"
 #include "slang/text/SourceManager.h"
+#include "slang/util/Bag.h"
 #include "slang/util/CommandLine.h"
 #include "slang/util/LanguageVersion.h"
 #include "slang/util/Util.h"
@@ -71,11 +75,12 @@ void generateNewFile(const std::string &content, const std::string &newPath);
 
 bool checkDiagsError(Diagnostics &diags);
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager());
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager(), const Bag &options = {});
 
 class Driver {
   private:
     slang::SourceManager emptySourceManager;
+    slang::Bag bag;
     std::vector<std::string> files;
     std::optional<bool> showHelp;
     std::string name;
@@ -101,6 +106,7 @@ class Driver {
     std::vector<std::string> &getFiles() { return files; }
     slang::SourceManager &getEmptySourceManager() { return emptySourceManager; }
     slang::driver::Driver &getInternalDriver() { return driver; }
+    slang::Bag &getBag() { return bag; }
     std::optional<std::string> tryGetTopModuleName() {
         if (!driver.options.topModules.empty()) {
             if (driver.options.topModules.size() > 1) {
