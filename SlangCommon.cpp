@@ -250,11 +250,19 @@ bool Driver::parseCommandLine(int argc, char **argv) {
 void Driver::loadAllSources(std::function<std::string(std::string_view)> fileTransform) {
     auto totalFileCount = files.size();
 
+    if (!verbose) {
+        fmt::println("[{}] Loading {} files... ", name, totalFileCount);
+    }
+
     for (int i = 0; i < totalFileCount; i++) {
         auto file = files[i];
 
         if (verbose) {
             fmt::println("[{}] [{}/{}] get file: {}", name, i + 1, totalFileCount, file);
+            fflush(stdout);
+        } else {
+            fmt::print("\t{}/{} {:.2f}%\r", i + 1, totalFileCount, (double)(i + 1) / (double)totalFileCount * 100);
+            fflush(stdout);
         }
 
         if (fileTransform == nullptr) {
@@ -262,6 +270,10 @@ void Driver::loadAllSources(std::function<std::string(std::string_view)> fileTra
         } else {
             driver.sourceLoader.addFiles(std::string_view(fileTransform(file)));
         }
+    }
+
+    if (!verbose) {
+        fmt::println("");
     }
 
     loadAllSourcesDone = true;
