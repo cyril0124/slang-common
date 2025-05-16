@@ -733,6 +733,11 @@ void listSyntaxTree(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth = 1000) 
     tree->root().visit(sl);
 }
 
+void listSyntaxTree(const slang::syntax::SyntaxTree *tree, uint64_t maxDepth = 1000) {
+    SynaxLister sl(maxDepth);
+    tree->root().visit(sl);
+}
+
 void listSyntaxNode(const SyntaxNode &node, uint64_t maxDepth = 1000) {
     SynaxLister sl(maxDepth);
     node.visit(sl);
@@ -789,5 +794,34 @@ const SyntaxNode *getNetDeclarationSyntax(const SyntaxNode *node, std::string_vi
 
     return nullptr;
 }
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation &compilation, std::string moduleName) {
+    struct HierPathGetter : public slang::ast::ASTVisitor<HierPathGetter, false, false> {
+        std::string moduleName;
+        std::vector<std::string> hierPaths;
+        HierPathGetter(std::string moduleName) : moduleName(moduleName) {}
+
+        void handle(const InstanceSymbol &inst) {
+            auto _moduleName = inst.getDefinition().name;
+
+            if (_moduleName == moduleName) {
+                // Hierarchical path may come from multiple instances
+                std::string hierPath = "";
+                inst.getHierarchicalPath(hierPath);
+                hierPaths.emplace_back(hierPath);
+            } else {
+                visitDefault(inst);
+            }
+        }
+    };
+
+    HierPathGetter visitor(moduleName);
+    compilation.getRoot().visit(visitor);
+    return visitor.hierPaths;
+}
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std::string moduleName) { return getHierPaths(*compilation, moduleName); }
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std::string_view moduleName) { return getHierPaths(*compilation, std::string(moduleName)); }
 
 } // namespace slang_common

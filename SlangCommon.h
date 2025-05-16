@@ -142,6 +142,8 @@ void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);
 
 void listSyntaxTree(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);
 
+void listSyntaxTree(const slang::syntax::SyntaxTree *tree, uint64_t maxDepth);
+
 void listSyntaxNode(const SyntaxNode &node, uint64_t maxDepth);
 
 void listASTNode(std::shared_ptr<SyntaxTree> tree, const ModuleDeclarationSyntax &syntax, uint64_t maxDepth);
@@ -151,4 +153,11 @@ const DefinitionSymbol *getDefSymbol(std::shared_ptr<SyntaxTree> tree, const Mod
 const InstanceSymbol *getInstSymbol(Compilation &compilation, const ModuleDeclarationSyntax &syntax);
 
 const SyntaxNode *getNetDeclarationSyntax(const SyntaxNode *node, std::string_view identifierName, bool reverse = false);
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation &compilation, std::string moduleName);
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std::string moduleName);
+
+std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std::string_view moduleName);
+
 } // namespace slang_common
