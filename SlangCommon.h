@@ -86,7 +86,7 @@ class Driver {
     std::string name;
     bool loadAllSourcesDone  = false;
     bool parseAllSourcesDone = false;
-    bool verbose;
+    bool verbose             = false;
 
   public:
     slang::driver::Driver driver;
