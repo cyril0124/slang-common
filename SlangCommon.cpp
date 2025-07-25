@@ -406,6 +406,26 @@ std::shared_ptr<SyntaxTree> Driver::rebuildSyntaxTree(const SyntaxTree &oldTree,
     return slang_common::rebuildSyntaxTree(oldTree, printTree, this->getEmptySourceManager(), this->getBag());
 }
 
+// For GCC and Clang, which use the Itanium C++ ABI
+#if defined(__GNUC__) || defined(__clang__)
+#include <cxxabi.h>
+#endif
+
+// A helper function to demangle type names
+std::string demangle(const char *name) {
+#if defined(__GNUC__) || defined(__clang__)
+    int status = 0;
+    // abi::__cxa_demangle allocates memory with malloc() that we must free()
+    std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free};
+    return (status == 0) ? res.get() : name;
+#else
+    // For other compilers (like MSVC), typeid.name() is often already readable
+    // or requires a different, platform-specific demangling function.
+    // For simplicity, we'll just return the original name here.
+    return name;
+#endif
+}
+
 class SynaxLister : public SyntaxVisitor<SynaxLister> {
   public:
     const uint64_t maxDepth;
@@ -417,7 +437,7 @@ class SynaxLister : public SyntaxVisitor<SynaxLister> {
 
 #define SYNTAX_NAME()                                                                                                                                                                                  \
     extra += "\tsynName: ";                                                                                                                                                                            \
-    auto name = boost::typeindex::type_id<decltype(syn)>().pretty_name();                                                                                                                              \
+    auto name = demangle(typeid(decltype(syn)).name());                                                                                                                                                \
     extra += std::string(name);                                                                                                                                                                        \
     extra += " ";
 
@@ -598,7 +618,7 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
 
 #define AST_NAME()                                                                                                                                                                                     \
     extra += "\tastName: ";                                                                                                                                                                            \
-    auto name = boost::typeindex::type_id<decltype(ast)>().pretty_name();                                                                                                                              \
+    auto name = demangle(typeid(decltype(ast)).name());                                                                                                                                                \
     extra += std::string(name);                                                                                                                                                                        \
     extra += " ";                                                                                                                                                                                      \
     extra += "\tsynKindName: ";                                                                                                                                                                        \

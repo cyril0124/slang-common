@@ -28,7 +28,6 @@
 #include "slang/util/CommandLine.h"
 #include "slang/util/LanguageVersion.h"
 #include "slang/util/Util.h"
-#include <boost/type_index.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <fmt/ranges.h>
