@@ -324,6 +324,7 @@ bool Driver::processOptions(bool singleUnit) {
     }
 
     // Add compilation options
+    // See: slang/source/driver/Driver.cpp: void Driver::addCompilationOptions(Bag& bag)
     {
         slang::ast::CompilationOptions coptions;
         coptions.flags           = slang::ast::CompilationFlags::None;
@@ -349,9 +350,6 @@ bool Driver::processOptions(bool singleUnit) {
             if (value == true)
                 coptions.flags |= flag;
         }
-
-        if (options.lintMode())
-            coptions.flags |= slang::ast::CompilationFlags::SuppressUnused;
 
         for (auto &name : options.topModules)
             coptions.topModules.emplace(name);
@@ -391,13 +389,11 @@ bool Driver::reportParseDiags() { return driver.reportParseDiags(); }
 
 std::unique_ptr<slang::ast::Compilation> Driver::createCompilation() { return driver.createCompilation(); }
 
-bool Driver::reportCompilation(slang::ast::Compilation &compilation, bool quiet) { return driver.reportCompilation(compilation, quiet); }
-
 std::unique_ptr<slang::ast::Compilation> Driver::createAndReportCompilation(bool quiet) {
+    if (!this->driver.runFullCompilation(quiet)) {
+        assert(false && "runFullCompilation() failed");
+    };
     auto compilation = this->createCompilation();
-    if (!this->reportCompilation(*compilation, quiet)) {
-        assert(false && "reportCompilation() failed");
-    }
     return compilation;
 }
 
@@ -826,8 +822,7 @@ std::vector<std::string> getHierPaths(slang::ast::Compilation &compilation, std:
 
             if (_moduleName == moduleName) {
                 // Hierarchical path may come from multiple instances
-                std::string hierPath = "";
-                inst.getHierarchicalPath(hierPath);
+                std::string hierPath = inst.getHierarchicalPath();
                 hierPaths.emplace_back(hierPath);
             } else {
                 visitDefault(inst);

@@ -131,7 +131,6 @@ class Driver {
     bool processOptions(bool singleUnit = true);
     bool parseAllSources();
     bool reportParseDiags();
-    bool reportCompilation(slang::ast::Compilation &compilation, bool quiet = false);
     std::unique_ptr<slang::ast::Compilation> createCompilation();
     std::unique_ptr<slang::ast::Compilation> createAndReportCompilation(bool quiet = false);
     std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false);

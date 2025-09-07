@@ -84,9 +84,9 @@ class SlangSyntaxViewer {
         assert(driver.reportParseDiags() && "Failed to report parse diagnostics");
         assert(driver.syntaxTrees.size() == 1 && "Only one SyntaxTree is expected");
 
-        auto compilation    = driver.createCompilation();
-        bool compileSuccess = driver.reportCompilation(*compilation, false);
-        assert(compileSuccess);
+        bool compileSuccess = driver.runFullCompilation(false);
+        assert(compileSuccess && "Failed to compile the design");
+        auto compilation = driver.createCompilation();
 
         std::shared_ptr<slang::syntax::SyntaxTree> tree = driver.syntaxTrees[0];
 
@@ -117,6 +117,10 @@ class SlangSyntaxViewer {
             ModuleASTGetter getter(topModuleName, _depth, tree);
             getter.visit(tree->root());
             assert(getter.found && fmt::format("Could not find module: {}", topModuleName).c_str());
+        }
+
+        if (!listSyntaxTree && !listAst) {
+            std::cout << "Neither `--list-syntax-tree/--lsyn` nor `--list-ast/--last` is set, do nothing." << std::endl;
         }
     }
 };

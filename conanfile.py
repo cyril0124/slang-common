@@ -7,7 +7,7 @@ class SlangCommonConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
     requires = (
-        "slang/8.0",
+        "slang/9.0",
     )
 
     def generate(self):
