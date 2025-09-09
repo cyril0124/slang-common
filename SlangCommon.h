@@ -75,6 +75,8 @@ void generateNewFile(const std::string &content, const std::string &newPath);
 bool checkDiagsError(Diagnostics &diags);
 
 std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager(), const Bag &options = {});
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, int errorLimit = 0, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager(),
+                                              const Bag &options = {});
 
 class Driver {
   private:
@@ -133,7 +135,7 @@ class Driver {
     bool reportParseDiags();
     std::unique_ptr<slang::ast::Compilation> createCompilation();
     std::unique_ptr<slang::ast::Compilation> createAndReportCompilation(bool quiet = false);
-    std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false);
+    std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, int errorLimit = 0);
 };
 
 void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);

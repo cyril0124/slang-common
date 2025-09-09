@@ -15,13 +15,22 @@ bool checkDiagsError(Diagnostics &diags) {
     return false;
 }
 
-std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager, const Bag &options) {
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, int errorLimit, slang::SourceManager &sourceManager, const Bag &options) {
     auto oldTreeStr = SyntaxPrinter::printFile(oldTree);
     auto newTree    = SyntaxTree::fromFileInMemory(oldTreeStr, sourceManager, "slang_common::rebuildSyntaxTree"sv, "", options);
     if (newTree->diagnostics().empty() == false) {
         auto diags = newTree->diagnostics();
         if (checkDiagsError(diags)) {
-            auto ret = DiagnosticEngine::reportAll(sourceManager, diags);
+            DiagnosticEngine engine(sourceManager);
+            engine.setErrorLimit(errorLimit);
+
+            auto client = std::make_shared<TextDiagnosticClient>();
+            engine.addClient(client);
+            for (auto &diag : diags) {
+                engine.issue(diag);
+            }
+
+            auto ret = client->getString();
             fmt::println(R"(
 === [slang_common::rebuildSyntaxTree] SYNTAX ERROR ===
 {}
@@ -48,7 +57,16 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
         auto diags = compilation.getAllDiagnostics();
         if (diags.empty() == false) {
             if (checkDiagsError(diags)) {
-                auto ret = DiagnosticEngine::reportAll(sourceManager, diags);
+                DiagnosticEngine engine(sourceManager);
+                engine.setErrorLimit(errorLimit);
+
+                auto client = std::make_shared<TextDiagnosticClient>();
+                engine.addClient(client);
+                for (auto &diag : diags) {
+                    engine.issue(diag);
+                }
+
+                auto ret = client->getString();
                 fmt::println(R"(
 === [slang_common::rebuildSyntaxTree] COMPILATION ERROR ===
 {}
@@ -73,6 +91,10 @@ std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool pr
     }
 
     return newTree;
+}
+
+std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, slang::SourceManager &sourceManager, const Bag &options) {
+    return rebuildSyntaxTree(oldTree, printTree, 0, sourceManager, options);
 }
 
 namespace file_manage {
@@ -398,8 +420,8 @@ std::unique_ptr<slang::ast::Compilation> Driver::createAndReportCompilation(bool
 }
 
 // Wrap slang_common::rebuildSyntaxTree
-std::shared_ptr<SyntaxTree> Driver::rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree) {
-    return slang_common::rebuildSyntaxTree(oldTree, printTree, this->getEmptySourceManager(), this->getBag());
+std::shared_ptr<SyntaxTree> Driver::rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree, int errorLimit) {
+    return slang_common::rebuildSyntaxTree(oldTree, printTree, errorLimit, this->getEmptySourceManager(), this->getBag());
 }
 
 // For GCC and Clang, which use the Itanium C++ ABI
