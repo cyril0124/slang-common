@@ -22,7 +22,18 @@ target("init", function()
         end
 
         os.cd(path.join(prj_dir, "scripts", "conan", "slang"))
-        os.exec(conan_cmd .. " create . --build=missing")
+        try {
+            function()
+                os.exec(conan_cmd .. " create . --build=missing")
+            end,
+            catch
+            {
+                function(errors)
+                    os.exec(conan_cmd .. " profile detect --force")
+                    os.exec(conan_cmd .. " create . --build=missing")
+                end
+            }
+        }
 
         os.cd(prj_dir)
         os.exec(conan_cmd .. " install . --output-folder=%s --build=missing", conan_install_dir)
@@ -54,5 +65,59 @@ target("slang-syntax-viewer", function()
         local bin_dir = path.join(prj_dir, "bin")
         os.mkdir(bin_dir)
         os.cp(target:targetfile(), bin_dir)
+    end)
+end)
+
+target("tests", function()
+    set_kind("binary")
+    set_default(false)
+
+    set_languages("c++20")
+
+    add_files(
+        path.join(prj_dir, "tests", "*.cpp"),
+        path.join(prj_dir, "SlangCommon.cpp"),
+        path.join(prj_dir, "SemanticModel.cpp")
+    )
+
+    add_includedirs(
+        prj_dir,
+        conan_include_dir
+    )
+
+    add_defines("SLANG_BOOST_SINGLE_HEADER")
+
+    add_links("Catch2Main", "Catch2", "svlang", "fmt", "mimalloc")
+    add_linkdirs(conan_libs_dir)
+    add_rpathdirs(conan_libs_dir)
+
+    after_build(function(target)
+        print("Tests built successfully at: " .. target:targetfile())
+    end)
+end)
+
+target("format", function()
+    set_kind("phony")
+    on_run(function(target)
+        -- Find all C++ source and header files
+        local cpp_files = os.files(path.join(prj_dir, "*.cpp"))
+        local h_files = os.files(path.join(prj_dir, "*.h"))
+        local test_files = os.files(path.join(prj_dir, "tests", "*.cpp"))
+        local viewer_files = os.files(path.join(prj_dir, "slang-syntax-viewer", "*.cpp"))
+        
+        -- Combine all files
+        local all_files = {}
+        for _, f in ipairs(cpp_files) do table.insert(all_files, f) end
+        for _, f in ipairs(h_files) do table.insert(all_files, f) end
+        for _, f in ipairs(test_files) do table.insert(all_files, f) end
+        for _, f in ipairs(viewer_files) do table.insert(all_files, f) end
+        
+        -- Format each file
+        print("Formatting C++ files with clang-format...")
+        for _, file in ipairs(all_files) do
+            print("  Formatting: " .. path.relative(file, prj_dir))
+            os.exec("clang-format -i %s", file)
+        end
+        print("Formatting complete! Total files formatted: " .. #all_files)
     end)
 end)

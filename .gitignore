@@ -1,3 +1,4 @@
+# Build artifacts
 .clangd
 .vscode
 .xmake
@@ -5,3 +6,20 @@ build
 conan_installed
 bin
 .cache
+
+# Test artifacts
+*.bak
+test_*.txt
+test_*.v
+test_workdir
+test_output
+
+# IDE
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

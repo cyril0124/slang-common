@@ -6,6 +6,53 @@ using namespace slang::syntax;
 using namespace slang::ast;
 
 namespace slang_common {
+
+namespace file_operations {
+bool insertBeforeFileHead(std::string_view filePath, std::string_view str) {
+    try {
+        std::ifstream inFile(filePath.data());
+        if (!inFile.is_open()) {
+            return false;
+        }
+
+        std::stringstream buffer;
+        buffer << "\n" << str << "\n" << inFile.rdbuf();
+        inFile.close();
+
+        std::ofstream outFile(filePath.data());
+        if (!outFile.is_open()) {
+            return false;
+        }
+
+        outFile << buffer.rdbuf();
+        outFile.close();
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
+}
+
+bool insertAfterFileEnd(std::string_view filePath, std::string_view str) {
+    try {
+        // Check if file exists first
+        if (!std::filesystem::exists(filePath)) {
+            return false;
+        }
+
+        std::ofstream outFile(filePath.data(), std::ios::app);
+        if (!outFile.is_open()) {
+            return false;
+        }
+
+        outFile << "\n" << str;
+        outFile.close();
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
+}
+} // namespace file_operations
+
 bool checkDiagsError(Diagnostics &diags) {
     for (auto &diag : diags) {
         if (diag.isError()) {
@@ -429,7 +476,14 @@ std::shared_ptr<SyntaxTree> Driver::rebuildSyntaxTree(const SyntaxTree &oldTree,
 #include <cxxabi.h>
 #endif
 
-// A helper function to demangle type names
+/**
+ * @brief Demangle C++ type names for better readability in output
+ * @param name Mangled type name from typeid().name()
+ * @return Demangled human-readable type name
+ *
+ * For GCC/Clang: Uses Itanium C++ ABI demangling
+ * For other compilers: Returns name as-is (may already be readable)
+ */
 std::string demangle(const char *name) {
 #if defined(__GNUC__) || defined(__clang__)
     int status = 0;
@@ -437,21 +491,35 @@ std::string demangle(const char *name) {
     std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free};
     return (status == 0) ? res.get() : name;
 #else
-    // For other compilers (like MSVC), typeid.name() is often already readable
-    // or requires a different, platform-specific demangling function.
-    // For simplicity, we'll just return the original name here.
+    // For MSVC and other compilers, typeid.name() may already be readable
     return name;
 #endif
 }
 
-class SynaxLister : public SyntaxVisitor<SynaxLister> {
+/**
+ * @class SyntaxTreePrinter
+ * @brief Visitor class for printing SystemVerilog syntax trees with detailed formatting
+ *
+ * This class traverses a syntax tree using the visitor pattern and prints each node
+ * with rich contextual information including:
+ * - Tree structure visualization using box-drawing characters (├─ └─ │)
+ * - Node depth and visit order for tracking traversal
+ * - Syntax kind (e.g., ModuleDeclaration, BinaryExpression)
+ * - Demangled C++ type name for debugging
+ * - Node-specific information (module names, identifiers, assignments, etc.)
+ *
+ * Specialized handlers provide context-specific information for different syntax constructs.
+ * The maxDepth parameter prevents stack overflow on deeply nested structures.
+ */
+class SyntaxTreePrinter : public SyntaxVisitor<SyntaxTreePrinter> {
   public:
-    const uint64_t maxDepth;
-    uint64_t depth = 0;
-    uint64_t count = 0;
-    std::vector<bool> lastChildStack;
+    const uint64_t maxDepth;          ///< Maximum traversal depth to prevent infinite recursion
+    uint64_t depth = 0;               ///< Current depth in the tree
+    uint64_t count = 0;               ///< Total number of nodes visited (for tracking)
+    std::vector<bool> lastChildStack; ///< Stack to track tree structure for formatting
 
-    SynaxLister(uint64_t maxDepth = 10000) : maxDepth(maxDepth) {}
+    /// @brief Construct a printer with specified maximum depth
+    SyntaxTreePrinter(uint64_t maxDepth = 10000) : maxDepth(maxDepth) {}
 
 #define SYNTAX_NAME()                                                                                                                                                                                  \
     extra += "\tsynName: ";                                                                                                                                                                            \
@@ -767,18 +835,18 @@ void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth = 1000) {
 }
 
 void listSyntaxTree(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth = 1000) {
-    SynaxLister sl(maxDepth);
-    tree->root().visit(sl);
+    SyntaxTreePrinter printer(maxDepth);
+    tree->root().visit(printer);
 }
 
 void listSyntaxTree(const slang::syntax::SyntaxTree *tree, uint64_t maxDepth = 1000) {
-    SynaxLister sl(maxDepth);
-    tree->root().visit(sl);
+    SyntaxTreePrinter printer(maxDepth);
+    tree->root().visit(printer);
 }
 
 void listSyntaxNode(const SyntaxNode &node, uint64_t maxDepth = 1000) {
-    SynaxLister sl(maxDepth);
-    node.visit(sl);
+    SyntaxTreePrinter printer(maxDepth);
+    node.visit(printer);
 }
 
 void listASTNode(std::shared_ptr<SyntaxTree> tree, const ModuleDeclarationSyntax &syntax, uint64_t maxDepth = 1000) {

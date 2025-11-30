@@ -46,25 +46,21 @@ using namespace slang::parsing;
 using namespace slang::syntax;
 using namespace slang::ast;
 
-#define INSERT_BEFORE_FILE_HEAD(filePath, str)                                                                                                                                                         \
-    do {                                                                                                                                                                                               \
-        std::ifstream inFile(filePath);                                                                                                                                                                \
-        std::stringstream buffer;                                                                                                                                                                      \
-        buffer << "\n" << str << "\n" << inFile.rdbuf();                                                                                                                                               \
-        inFile.close();                                                                                                                                                                                \
-        std::ofstream outFile(filePath);                                                                                                                                                               \
-        outFile << buffer.rdbuf();                                                                                                                                                                     \
-        outFile.close();                                                                                                                                                                               \
-    } while (0)
-
-#define INSERT_AFTER_FILE_END(filePath, str)                                                                                                                                                           \
-    do {                                                                                                                                                                                               \
-        std::ofstream outFile(filePath, std::ios::app);                                                                                                                                                \
-        outFile << "\n" << str;                                                                                                                                                                        \
-        outFile.close();                                                                                                                                                                               \
-    } while (0)
-
 namespace slang_common {
+
+namespace file_operations {
+/// @brief Insert content before the head of a file
+/// @param filePath Path to the file to modify
+/// @param str Content to insert
+/// @return true if successful, false otherwise
+bool insertBeforeFileHead(std::string_view filePath, std::string_view str);
+
+/// @brief Insert content after the end of a file
+/// @param filePath Path to the file to modify
+/// @param str Content to append
+/// @return true if successful, false otherwise
+bool insertAfterFileEnd(std::string_view filePath, std::string_view str);
+} // namespace file_operations
 
 namespace file_manage {
 std::string backupFile(std::string_view inputFile, std::string workdir);
@@ -72,9 +68,26 @@ bool isFileNewer(const std::string &file1, const std::string &file2);
 void generateNewFile(const std::string &content, const std::string &newPath);
 } // namespace file_manage
 
+/// @brief Check if diagnostics contain any errors
+/// @param diags The diagnostics collection to check
+/// @return true if any error diagnostic is found, false otherwise
 bool checkDiagsError(Diagnostics &diags);
 
+/// @brief Rebuild a syntax tree from its printed representation
+/// @param oldTree The original syntax tree
+/// @param printTree Whether to print the tree on error
+/// @param sourceManager Source manager for the new tree
+/// @param options Compilation options
+/// @return Rebuilt syntax tree
 std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager(), const Bag &options = {});
+
+/// @brief Rebuild a syntax tree with error limit
+/// @param oldTree The original syntax tree
+/// @param printTree Whether to print the tree on error
+/// @param errorLimit Maximum number of errors to report
+/// @param sourceManager Source manager for the new tree
+/// @param options Compilation options
+/// @return Rebuilt syntax tree
 std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, int errorLimit = 0, slang::SourceManager &sourceManager = SyntaxTree::getDefaultSourceManager(),
                                               const Bag &options = {});
 
@@ -104,10 +117,24 @@ class Driver {
             this->files.push_back(file);
         }
     }
+
+    /// @brief Get list of input files
     std::vector<std::string> &getFiles() { return files; }
+
+    /// @brief Get the source manager (for rebuildSyntaxTree operations)
     slang::SourceManager &getEmptySourceManager() { return emptySourceManager; }
+
+    /// @brief Get underlying slang driver for advanced operations
     slang::driver::Driver &getInternalDriver() { return driver; }
+
+    /// @brief Get bag of compilation options
     slang::Bag &getBag() { return bag; }
+
+    /**
+     * @brief Attempt to get the top module name from command line options
+     * @return Optional containing top module name if specified
+     * @throws Assertion failure if multiple top modules are specified
+     */
     std::optional<std::string> tryGetTopModuleName() {
         if (!driver.options.topModules.empty()) {
             if (driver.options.topModules.size() > 1) {
@@ -118,6 +145,12 @@ class Driver {
         }
         return std::nullopt;
     }
+
+    /**
+     * @brief Get the single syntax tree (for single-file compilation)
+     * @return Shared pointer to the syntax tree
+     * @throws Assertion failure if multiple syntax trees exist
+     */
     std::shared_ptr<slang::syntax::SyntaxTree> getSingleSyntaxTree() {
         assert(parseAllSourcesDone && "parseAllSources() must be called before getSingleSyntaxTree()");
 
@@ -127,21 +160,51 @@ class Driver {
         }
         return driver.syntaxTrees[0];
     }
+
+    /// @brief Add standard command-line arguments (includes, defines, etc.)
     void addStandardArgs();
+
+    /// @brief Parse command line arguments
     bool parseCommandLine(int argc, char **argv);
+
+    /// @brief Load all source files with optional transformation
+    /// @param fileTransform Optional function to transform file paths before loading
     void loadAllSources(std::function<std::string(std::string_view)> fileTransform = nullptr);
+
+    /// @brief Process compilation options
+    /// @param singleUnit Whether to compile as single unit
     bool processOptions(bool singleUnit = true);
+
+    /// @brief Parse all loaded source files
     bool parseAllSources();
+
+    /// @brief Report any parsing diagnostics
     bool reportParseDiags();
+
+    /// @brief Create compilation object from parsed sources
     std::unique_ptr<slang::ast::Compilation> createCompilation();
+
+    /// @brief Create compilation and report any errors
+    /// @param quiet Whether to suppress output
     std::unique_ptr<slang::ast::Compilation> createAndReportCompilation(bool quiet = false);
+
+    /// @brief Rebuild a syntax tree (wrapper for slang_common::rebuildSyntaxTree)
     std::shared_ptr<SyntaxTree> rebuildSyntaxTree(const SyntaxTree &oldTree, bool printTree = false, int errorLimit = 0);
 };
 
+/// @brief Print AST (Abstract Syntax Tree) of a syntax tree
+/// @param tree Syntax tree to print
+/// @param maxDepth Maximum depth to traverse
 void listAST(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);
 
+/// @brief Print syntax tree structure
+/// @param tree Syntax tree to print
+/// @param maxDepth Maximum depth to traverse
 void listSyntaxTree(std::shared_ptr<SyntaxTree> tree, uint64_t maxDepth);
 
+/// @brief Print syntax tree structure (pointer version)
+/// @param tree Pointer to syntax tree
+/// @param maxDepth Maximum depth to traverse
 void listSyntaxTree(const slang::syntax::SyntaxTree *tree, uint64_t maxDepth);
 
 void listSyntaxNode(const SyntaxNode &node, uint64_t maxDepth);
@@ -161,3 +224,6 @@ std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std:
 std::vector<std::string> getHierPaths(slang::ast::Compilation *compilation, std::string_view moduleName);
 
 } // namespace slang_common
+
+#define INSERT_BEFORE_FILE_HEAD(filePath, str) slang_common::file_operations::insertBeforeFileHead(filePath, str)
+#define INSERT_AFTER_FILE_END(filePath, str) slang_common::file_operations::insertAfterFileEnd(filePath, str)

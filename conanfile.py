@@ -8,6 +8,8 @@ class SlangCommonConan(ConanFile):
 
     requires = (
         "slang/9.0",
+        "catch2/3.11.0",
+        "fmt/11.2.0",
     )
 
     def generate(self):

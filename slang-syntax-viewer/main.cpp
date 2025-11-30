@@ -7,45 +7,99 @@
 #include <memory>
 #include <optional>
 
-class ModuleSyntaxGetter : public slang::syntax::SyntaxVisitor<ModuleSyntaxGetter> {
+/**
+ * @class ModuleSyntaxTreePrinter
+ * @brief Visitor class to find and print syntax tree for a specific module
+ *
+ * This class traverses the syntax tree to locate a module by name and prints
+ * its syntax tree structure up to a specified depth. It uses the visitor pattern
+ * for efficient tree traversal.
+ */
+class ModuleSyntaxTreePrinter : public slang::syntax::SyntaxVisitor<ModuleSyntaxTreePrinter> {
   public:
-    std::string moduleName;
-    uint32_t depth;
-    bool found = false;
+    /**
+     * @brief Construct a new Module Syntax Tree Printer
+     * @param targetModuleName Name of the module to find and print
+     * @param maxDepth Maximum depth to traverse when printing the tree
+     */
+    explicit ModuleSyntaxTreePrinter(std::string_view targetModuleName, uint32_t maxDepth) : targetModuleName_(targetModuleName), maxDepth_(maxDepth), found_(false) {}
 
-    ModuleSyntaxGetter(std::string moduleName, uint32_t depth) : moduleName(moduleName), depth(depth) {}
-
+    /**
+     * @brief Handler for module declaration syntax nodes
+     * @param syntax The module declaration syntax node to process
+     *
+     * When the target module is found, prints its syntax tree and stops traversal.
+     * Otherwise, continues visiting child nodes.
+     */
     void handle(const ModuleDeclarationSyntax &syntax) {
-        if (syntax.header->name.rawText() == this->moduleName) {
-            fmt::println("[ModuleSyntaxGetter] reach moduleName: {}", this->moduleName);
-            slang_common::listSyntaxNode(syntax, depth);
-            found = true;
-            return;
+        // Check if this is the module we're looking for
+        if (syntax.header->name.rawText() == targetModuleName_) {
+            fmt::println("[ModuleSyntaxTreePrinter] Found module: {}", targetModuleName_);
+            slang_common::listSyntaxNode(syntax, maxDepth_);
+            found_ = true;
+            return; // Stop traversal once found
         }
 
+        // Continue searching in child nodes
         visitDefault(syntax);
     }
+
+    /// @brief Check if the target module was found during traversal
+    [[nodiscard]] bool wasFound() const { return found_; }
+
+  private:
+    std::string_view targetModuleName_; ///< Name of module to locate
+    uint32_t maxDepth_;                 ///< Maximum depth for tree printing
+    bool found_;                        ///< Whether target module was found
 };
 
-class ModuleASTGetter : public slang::syntax::SyntaxVisitor<ModuleASTGetter> {
+/**
+ * @class ModuleASTPrinter
+ * @brief Visitor class to find and print AST for a specific module
+ *
+ * This class traverses the syntax tree to locate a module by name and prints
+ * its Abstract Syntax Tree (AST) structure. The AST provides semantic information
+ * beyond the pure syntactic structure.
+ */
+class ModuleASTPrinter : public slang::syntax::SyntaxVisitor<ModuleASTPrinter> {
   public:
-    std::string moduleName;
-    uint32_t depth;
-    std::shared_ptr<SyntaxTree> &tree;
-    bool found = false;
+    /**
+     * @brief Construct a new Module AST Printer
+     * @param targetModuleName Name of the module to find and print
+     * @param maxDepth Maximum depth to traverse when printing the AST
+     * @param syntaxTree Reference to the syntax tree containing the module
+     */
+    explicit ModuleASTPrinter(std::string_view targetModuleName, uint32_t maxDepth, std::shared_ptr<SyntaxTree> &syntaxTree)
+        : targetModuleName_(targetModuleName), maxDepth_(maxDepth), syntaxTree_(syntaxTree), found_(false) {}
 
-    ModuleASTGetter(std::string moduleName, uint32_t depth, std::shared_ptr<SyntaxTree> &tree) : moduleName(moduleName), depth(depth), tree(tree) {}
-
+    /**
+     * @brief Handler for module declaration syntax nodes
+     * @param syntax The module declaration syntax node to process
+     *
+     * When the target module is found, prints its AST structure and stops traversal.
+     * The AST includes semantic information like types, symbols, and bindings.
+     */
     void handle(const ModuleDeclarationSyntax &syntax) {
-        if (syntax.header->name.rawText() == this->moduleName) {
-            fmt::println("[ModuleASTGetter] reach moduleName: {}", this->moduleName);
-            slang_common::listASTNode(tree, syntax, depth);
-            found = true;
-            return;
+        // Check if this is the module we're looking for
+        if (syntax.header->name.rawText() == targetModuleName_) {
+            fmt::println("[ModuleASTPrinter] Found module: {}", targetModuleName_);
+            slang_common::listASTNode(syntaxTree_, syntax, maxDepth_);
+            found_ = true;
+            return; // Stop traversal once found
         }
 
+        // Continue searching in child nodes
         visitDefault(syntax);
     }
+
+    /// @brief Check if the target module was found during traversal
+    [[nodiscard]] bool wasFound() const { return found_; }
+
+  private:
+    std::string_view targetModuleName_;       ///< Name of module to locate
+    uint32_t maxDepth_;                       ///< Maximum depth for AST printing
+    std::shared_ptr<SyntaxTree> &syntaxTree_; ///< Reference to syntax tree
+    bool found_;                              ///< Whether target module was found
 };
 
 class SlangSyntaxViewer {
@@ -104,19 +158,27 @@ class SlangSyntaxViewer {
 
         int _depth = depth.value_or(9999);
         if (listSyntaxTree) {
-            std::cout << "List syntax tree" << std::endl;
+            std::cout << "Listing syntax tree for module: " << topModuleName << std::endl;
 
-            ModuleSyntaxGetter getter(topModuleName, _depth);
-            getter.visit(tree->root());
-            assert(getter.found && fmt::format("Could not find module: {}", topModuleName).c_str());
+            ModuleSyntaxTreePrinter printer(topModuleName, _depth);
+            printer.visit(tree->root());
+
+            if (!printer.wasFound()) {
+                fmt::println("Error: Could not find module '{}' in syntax tree", topModuleName);
+                exit(1);
+            }
         }
 
         if (listAst) {
-            std::cout << "List AST" << std::endl;
+            std::cout << "Listing AST for module: " << topModuleName << std::endl;
 
-            ModuleASTGetter getter(topModuleName, _depth, tree);
-            getter.visit(tree->root());
-            assert(getter.found && fmt::format("Could not find module: {}", topModuleName).c_str());
+            ModuleASTPrinter printer(topModuleName, _depth, tree);
+            printer.visit(tree->root());
+
+            if (!printer.wasFound()) {
+                fmt::println("Error: Could not find module '{}' in syntax tree", topModuleName);
+                exit(1);
+            }
         }
 
         if (!listSyntaxTree && !listAst) {
