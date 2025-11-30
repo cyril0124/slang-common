@@ -810,6 +810,20 @@ class ASTLister : public ASTVisitor<ASTLister, true, true> {
         PRINT_INFO_AND_VISIT();
     }
 
+    void handle(const slang::ast::HierarchicalValueExpression &ast) {
+        if (depth > maxDepth)
+            return;
+
+        auto syn = ast.syntax;
+
+        std::string prefix = createPrefix();
+        std::string extra;
+
+        extra = fmt::format("\tastName: {} \tsynKindName: {} \thierVal: {}", demangle(typeid(decltype(ast)).name()), toString(syn->kind), syn->toString());
+
+        PRINT_INFO_AND_VISIT();
+    }
+
     std::string createPrefix() {
         std::string result;
         for (size_t j = 0; j < lastChildStack.size(); ++j) {
