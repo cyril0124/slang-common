@@ -62,7 +62,7 @@ class SlangSyntaxViewer {
         this->driver.addStandardArgs();
         this->driver.cmdLine.add("-d,--depth", depth, "Depth", "<integer>");
         this->driver.cmdLine.add("--lsyn,--list-syntax-tree", listSyntaxTree, "List syntax tree");
-        this->driver.cmdLine.add("--last,--lis-ast", listAst, "List AST");
+        this->driver.cmdLine.add("--last,--list-ast", listAst, "List AST");
         this->driver.cmdLine.add("-h,--help", showHelp, "Show help");
     };
 
