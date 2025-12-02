@@ -1,4 +1,4 @@
----@diagnostic disable
+---@diagnostic disable: undefined-global, undefined-field
 
 local prj_dir = os.curdir()
 local build_dir = path.join(prj_dir, "build")
@@ -46,7 +46,7 @@ target("slang-syntax-viewer", function()
     set_languages("c++20")
 
     add_files(
-        path.join(prj_dir, "slang-syntax-viewer", "*.cpp"),
+        path.join(prj_dir, "tools", "slang-syntax-viewer", "*.cpp"),
         path.join(prj_dir, "*.cpp")
     )
 
@@ -104,7 +104,7 @@ target("xmr-eliminate", function()
     set_languages("c++20")
 
     add_files(
-        path.join(prj_dir, "xmr-eliminate", "*.cpp"),
+        path.join(prj_dir, "tools", "xmr-eliminate", "*.cpp"),
         path.join(prj_dir, "SlangCommon.cpp"),
         path.join(prj_dir, "SemanticModel.cpp"),
         path.join(prj_dir, "XMREliminate", "*.cpp")
@@ -137,11 +137,11 @@ target("format", function()
         local h_files = os.files(path.join(prj_dir, "*.h"))
         local test_files = os.files(path.join(prj_dir, "tests", "*.cpp"))
         local test_h_files = os.files(path.join(prj_dir, "tests", "*.h"))
-        local viewer_files = os.files(path.join(prj_dir, "slang-syntax-viewer", "*.cpp"))
-        local xmr_files = os.files(path.join(prj_dir, "xmr-eliminate", "*.cpp"))
+        local viewer_files = os.files(path.join(prj_dir, "tools", "slang-syntax-viewer", "*.cpp"))
+        local xmr_files = os.files(path.join(prj_dir, "tools", "xmr-eliminate", "*.cpp"))
         local xmr_elim_cpp = os.files(path.join(prj_dir, "XMREliminate", "*.cpp"))
         local xmr_elim_h = os.files(path.join(prj_dir, "XMREliminate", "*.h"))
-        
+
         -- Combine all files
         local all_files = {}
         for _, f in ipairs(cpp_files) do table.insert(all_files, f) end
@@ -152,7 +152,7 @@ target("format", function()
         for _, f in ipairs(xmr_files) do table.insert(all_files, f) end
         for _, f in ipairs(xmr_elim_cpp) do table.insert(all_files, f) end
         for _, f in ipairs(xmr_elim_h) do table.insert(all_files, f) end
-        
+
         -- Format each file
         print("Formatting C++ files with clang-format...")
         for _, file in ipairs(all_files) do
