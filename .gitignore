@@ -13,6 +13,10 @@ test_*.txt
 test_*.v
 test_workdir
 test_output
+.xmrEliminate
+
+# Example output directories
+examples/*/output/
 
 # IDE
 .idea

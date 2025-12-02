@@ -47,6 +47,7 @@ jobs:
     - name: Build main target
       run: |
         xmake build slang-syntax-viewer
+        xmake build xmr-eliminate
         
     - name: Build tests
       run: |
