@@ -12,10 +12,12 @@
 #include "SlangCommon.h"
 #include "XMREliminate.h"
 #include "slang/driver/Driver.h"
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <string>
 
 namespace fs = std::filesystem;
 
@@ -56,6 +58,7 @@ class XMREliminatorCLI {
     std::optional<std::string> resetName;
     std::optional<bool> resetActiveHigh;
     std::optional<bool> showHelp;
+    std::optional<bool> checkOutput;
     std::optional<std::string> topModule;
 
     // Input files (collected from positional args)
@@ -70,6 +73,7 @@ class XMREliminatorCLI {
         driver.cmdLine.add("-o,--output", outputDir, "Output directory for modified files", "<dir>");
         driver.cmdLine.add("-m,--module", moduleList, "Target modules for XMR elimination (comma-separated)", "<modules>");
         driver.cmdLine.add("--verbose", verbose, "Enable verbose output");
+        driver.cmdLine.add("--co,--check-output", checkOutput, "Check output");
 
         // Pipeline register options
         driver.cmdLine.add("--pipe-reg-mode", pipeRegMode, "Pipeline register mode: none|global|permodule|selective", "<mode>");
@@ -155,6 +159,15 @@ class XMREliminatorCLI {
         config.clockName      = clockName.value_or("clk");
         config.resetName      = resetName.value_or("rst_n");
         config.resetActiveLow = !resetActiveHigh.value_or(false);
+
+        // Check if output verification is requested
+        auto checkOutputEnv = std::getenv("CHECK_OUTPUT");
+        if (checkOutputEnv && std::string(checkOutputEnv) == "1") {
+            config.checkOutput = true;
+        }
+        if (checkOutput.value_or(false)) {
+            config.checkOutput = true;
+        }
 
         // Configure pipeline registers
         std::string mode = pipeRegMode.value_or("none");

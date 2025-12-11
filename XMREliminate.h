@@ -121,6 +121,9 @@ struct XMREliminateConfig {
 
     /// Whether reset is active low (true) or active high (false)
     bool resetActiveLow = true;
+
+    /// Whether to check output files by recompiling them with slang
+    bool checkOutput = false;
 };
 
 /**

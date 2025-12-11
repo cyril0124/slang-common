@@ -67,13 +67,13 @@ module top;
     assign out2 = __xmr__u_b_data;
 endmodule
 
-module sub_a;
+module sub_a( __xmr__u_a_data);
     output wire __xmr__u_a_data;
     reg data;
     assign __xmr__u_a_data = data;
 endmodule
 
-module sub_b;
+module sub_b( __xmr__u_b_data);
     output wire __xmr__u_b_data;
     reg data;
     assign __xmr__u_b_data = data;
@@ -121,31 +121,31 @@ module top;
     assign result = __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
 endmodule
 
-module level1;
+module level1( __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data);
     output wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     level2 u_l2(
         .__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data(__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data));
 endmodule
 
-module level2;
+module level2( __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data);
     output wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     level3 u_l3(
         .__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data(__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data));
 endmodule
 
-module level3;
+module level3( __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data);
     output wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     level4 u_l4(
         .__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data(__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data));
 endmodule
 
-module level4;
+module level4( __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data);
     output wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     level5 u_l5(
         .__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data(__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data));
 endmodule
 
-module level5;
+module level5( __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data);
     output wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     reg deep_data;
     assign __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data = deep_data;
@@ -207,7 +207,7 @@ module top;
     assign out3 = __xmr__u_sub_shared_signal & 1'b1;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_shared_signal);
     output wire __xmr__u_sub_shared_signal;
     reg shared_signal;
     assign __xmr__u_sub_shared_signal = shared_signal;
@@ -239,7 +239,7 @@ module top;
     assign out = __xmr__u_sub_special_my_signal_123;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_special_my_signal_123);
     output wire __xmr__u_sub_special_my_signal_123;
     reg my_signal_123;
     assign __xmr__u_sub_special_my_signal_123 = my_signal_123;
@@ -278,7 +278,7 @@ module top(
     assign result = __xmr__u_sub_data[0];
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_data);
     output wire [7:0] __xmr__u_sub_data;
     reg [7:0] data;
     assign __xmr__u_sub_data = data;
@@ -312,7 +312,7 @@ module top(
     assign result = __xmr__u_sub_data[7:4];
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_data);
     output wire [7:0] __xmr__u_sub_data;
     reg [7:0] data;
     assign __xmr__u_sub_data = data;

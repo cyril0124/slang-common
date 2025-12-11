@@ -11,6 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EXAMPLES_DIR="$PROJECT_ROOT/examples"
 
+export CHECK_OUTPUT=1
+
 echo -e "${YELLOW}=== Slang Common Test Suite ===${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo ""

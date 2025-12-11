@@ -9,6 +9,9 @@
 #include "../XMREliminate.h"
 #include "XMRChangeSet.h"
 #include "fmt/core.h"
+#include "slang/syntax/AllSyntax.h"
+#include "slang/syntax/SyntaxNode.h"
+#include "slang/util/SmallVector.h"
 
 namespace slang_common {
 namespace xmr {
@@ -79,15 +82,67 @@ void XMRRewriterFirst::handle(const slang::syntax::ModuleDeclarationSyntax &synt
                 }
             } else if (!syntax.header->ports) {
                 // No port list at all (module m;)
-                // Use non-ANSI style: add port declarations as members inside the module body
+                // We need to:
+                // 1. Create a new NonAnsiPortListSyntax with port names
+                // 2. Create a new ModuleHeaderSyntax with the port list
+                // 3. Replace the old header with the new one
+                // 4. Add port declarations inside the module body
+
+                // Build the list of NonAnsiPortSyntax nodes for each port
+                slang::SmallVector<slang::syntax::TokenOrSyntax, 8> listItems;
+                for (size_t i = 0; i < portsIt->second.size(); i++) {
+                    if (i > 0) {
+                        listItems.push_back(makeComma());
+                    }
+                    // Create a PortReferenceSyntax for the port name
+                    auto portToken = makeId(portsIt->second[i].portName, SingleSpace);
+                    auto &portRef  = factory.portReference(portToken, nullptr);
+                    // Wrap it in an ImplicitNonAnsiPortSyntax
+                    auto &implicitPort = factory.implicitNonAnsiPort(portRef);
+                    listItems.push_back(&implicitPort);
+                }
+
+                // Copy the list items to the allocator to ensure they persist
+                auto portListSpan = listItems.copy(alloc);
+                slang::syntax::SeparatedSyntaxList<slang::syntax::NonAnsiPortSyntax> separatedPortList(portListSpan);
+
+                // Create tokens for the port list parentheses
+                auto openParen  = makeToken(slang::parsing::TokenKind::OpenParenthesis, "(");
+                auto closeParen = makeToken(slang::parsing::TokenKind::CloseParenthesis, ")");
+
+                // Create the NonAnsiPortListSyntax
+                auto &newPortList = factory.nonAnsiPortList(openParen, separatedPortList, closeParen);
+
+                // Create the new ModuleHeaderSyntax with the port list
+                auto &newHeader = factory.moduleHeader(syntax.header->kind, syntax.header->moduleKeyword, syntax.header->lifetime, syntax.header->name, syntax.header->imports,
+                                                       syntax.header->parameters, &newPortList, syntax.header->semi);
+
+                // Replace the old header with the new one
+                replace(*syntax.header, newHeader);
+
+                // Add port declarations inside the module body (non-ANSI style)
                 for (const auto &port : portsIt->second) {
                     std::string widthSpec = (port.bitWidth > 1) ? fmt::format("[{}:0] ", port.bitWidth - 1) : "";
                     insertAtFront(syntax.members, parse(fmt::format("\n    {} wire {}{};", port.direction, widthSpec, port.portName)));
                     addedPorts.insert(port.portName);
                 }
-            } else {
+            } else if (syntax.header->ports->kind == slang::syntax::SyntaxKind::NonAnsiPortList) {
                 // Non-ANSI port list (module m(a, b); input a; output b;)
-                // Add port declarations inside the module body
+                // Add new port names to the port list and add declarations inside the module body
+                auto &nonAnsiPorts = syntax.header->ports->as<slang::syntax::NonAnsiPortListSyntax>();
+
+                for (const auto &port : portsIt->second) {
+                    // Add port name to the port list
+                    std::string portNameDecl = fmt::format(", {}", port.portName);
+                    insertAtBack(nonAnsiPorts.ports, parse(portNameDecl));
+
+                    // Add port declaration inside the module body
+                    std::string widthSpec = (port.bitWidth > 1) ? fmt::format("[{}:0] ", port.bitWidth - 1) : "";
+                    insertAtFront(syntax.members, parse(fmt::format("\n    {} wire {}{};", port.direction, widthSpec, port.portName)));
+                    addedPorts.insert(port.portName);
+                }
+            } else {
+                // Other port list types - add port declarations inside the module body
                 for (const auto &port : portsIt->second) {
                     std::string widthSpec = (port.bitWidth > 1) ? fmt::format("[{}:0] ", port.bitWidth - 1) : "";
                     insertAtFront(syntax.members, parse(fmt::format("\n    {} wire {}{};", port.direction, widthSpec, port.portName)));

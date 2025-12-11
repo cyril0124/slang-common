@@ -145,7 +145,7 @@ module top(
     assign result = __xmr__u_sub_sig;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_sig);
     output wire __xmr__u_sub_sig;
     reg sig;
     assign __xmr__u_sub_sig = sig;

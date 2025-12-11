@@ -57,7 +57,7 @@ module top(
     assign out3 = __xmr__u_sub2_sig_a;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub1_sig_a, __xmr__u_sub1_sig_b, __xmr__u_sub2_sig_a);
     output wire __xmr__u_sub1_sig_a;
     output wire __xmr__u_sub1_sig_b;
     output wire __xmr__u_sub2_sig_a;
@@ -102,7 +102,7 @@ module top(
     assign result = __xmr__u_sub1_data & __xmr__u_sub2_data;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub1_data, __xmr__u_sub2_data);
     output wire __xmr__u_sub1_data;
     output wire __xmr__u_sub2_data;
     reg data;
@@ -146,19 +146,19 @@ module top(
     assign result = __xmr__u_l1_u_l2_u_l3_deep_signal;
 endmodule
 
-module level1;
+module level1( __xmr__u_l1_u_l2_u_l3_deep_signal);
     output wire __xmr__u_l1_u_l2_u_l3_deep_signal;
     level2 u_l2(
         .__xmr__u_l1_u_l2_u_l3_deep_signal(__xmr__u_l1_u_l2_u_l3_deep_signal));
 endmodule
 
-module level2;
+module level2( __xmr__u_l1_u_l2_u_l3_deep_signal);
     output wire __xmr__u_l1_u_l2_u_l3_deep_signal;
     level3 u_l3(
         .__xmr__u_l1_u_l2_u_l3_deep_signal(__xmr__u_l1_u_l2_u_l3_deep_signal));
 endmodule
 
-module level3;
+module level3( __xmr__u_l1_u_l2_u_l3_deep_signal);
     output wire __xmr__u_l1_u_l2_u_l3_deep_signal;
     reg deep_signal;
     assign __xmr__u_l1_u_l2_u_l3_deep_signal = deep_signal;
@@ -192,7 +192,7 @@ module top(
     assign data_out = __xmr__u_sub_wide_bus;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_wide_bus);
     output wire [31:0] __xmr__u_sub_wide_bus;
     reg [31:0] wide_bus;
     assign __xmr__u_sub_wide_bus = wide_bus;
@@ -245,7 +245,7 @@ module top(
     end
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_data);
     output wire __xmr__u_sub_data;
     reg data;
     assign __xmr__u_sub_data = data;
@@ -284,7 +284,7 @@ module top(
     assign result = sel ? __xmr__u_sub_a_data : __xmr__u_sub_b_data;
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_a_data, __xmr__u_sub_b_data);
     output wire __xmr__u_sub_a_data;
     output wire __xmr__u_sub_b_data;
     reg data;
@@ -327,7 +327,7 @@ module top(
     assign result = invert_byte( __xmr__u_sub_byte_data);
 endmodule
 
-module sub;
+module sub( __xmr__u_sub_byte_data);
     output wire [7:0] __xmr__u_sub_byte_data;
     reg [7:0] byte_data;
     assign __xmr__u_sub_byte_data = byte_data;
@@ -374,7 +374,7 @@ module top(
     end
 endmodule
 
-module ctrl;
+module ctrl( __xmr__u_ctrl_mode);
     output wire [1:0] __xmr__u_ctrl_mode;
     reg [1:0] mode;
     assign __xmr__u_ctrl_mode = mode;

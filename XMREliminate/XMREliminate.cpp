@@ -652,6 +652,84 @@ XMREliminateResult xmrEliminate(const std::vector<std::string> &inputFiles, cons
 
     std::cout << result.getSummary();
 
+    //==========================================================================
+    // Step 12: Check output files if requested
+    //==========================================================================
+    if (config.checkOutput) {
+        std::cout << "\n==========================================";
+        std::cout << "\nChecking output files...";
+        std::cout << "\n==========================================";
+        std::cout << std::endl;
+
+        slang_common::Driver checkDriver("CheckDriver");
+        checkDriver.addStandardArgs();
+
+        // Add output files to check driver
+        std::vector<std::string> outputFiles;
+        for (const auto &inputFile : inputFiles) {
+            std::filesystem::path inputPath(inputFile);
+            std::filesystem::path outputPath = std::filesystem::path(actualOutputDir) / inputPath.filename();
+            if (std::filesystem::exists(outputPath)) {
+                outputFiles.push_back(outputPath.string());
+            }
+        }
+
+        if (outputFiles.empty()) {
+            result.errors.push_back("No output files found to check");
+            return result;
+        }
+
+        // Add files and load sources
+        checkDriver.addFiles(outputFiles);
+        checkDriver.loadAllSources();
+
+        // Set top module if available
+        if (!result.usedTopModule.empty()) {
+            checkDriver.driver.options.topModules.clear();
+            checkDriver.driver.options.topModules.push_back(result.usedTopModule);
+        } else if (!config.topModule.empty()) {
+            checkDriver.driver.options.topModules.clear();
+            checkDriver.driver.options.topModules.push_back(config.topModule);
+        }
+
+        // Process options
+        if (!checkDriver.processOptions(false)) {
+            result.errors.push_back("[checkDriver] Failed to process options");
+            return result;
+        }
+
+        // Parse all sources
+        if (!checkDriver.parseAllSources()) {
+            result.errors.push_back("[checkDriver] Failed to parse source files");
+            return result;
+        }
+
+        // Run full compilation
+        auto checkCompilation = checkDriver.createCompilation();
+        if (!checkCompilation) {
+            result.errors.push_back("[checkDriver] Failed to compile");
+            return result;
+        }
+
+        // Check for compilation errors
+        auto &diags    = checkCompilation->getAllDiagnostics();
+        bool hasErrors = false;
+        for (auto &diag : diags) {
+            if (diag.isError()) {
+                hasErrors = true;
+                break;
+            }
+        }
+
+        if (hasErrors) {
+            std::string errorMsg = slang::DiagnosticEngine::reportAll(checkDriver.driver.sourceManager, diags);
+            result.errors.push_back(fmt::format("[checkDriver] Compilation errors:\\n{}", errorMsg));
+            return result;
+        }
+
+        std::cout << "✓ Output files compiled successfully!" << std::endl;
+    }
+
     return result;
 }
 
