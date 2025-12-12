@@ -67,10 +67,43 @@ class XMREliminatorCLI {
     // Original working directory - saved before any slang processing changes it
     std::string originalCwd;
 
+    // Driver options to propagate to xmrEliminate
+    slang_common::xmr::DriverOptions driverOptions;
+
   public:
     XMREliminatorCLI() : originalCwd(fs::current_path().string()) {
         // Add standard slang arguments (includes file handling, etc.)
         driver.addStandardArgs();
+
+        // Override include directory handlers to capture them for propagation
+        driver.cmdLine.add(
+            "-I,--include-directory,+incdir",
+            [this](std::string_view value) {
+                // Add to the driver's source manager (so parsing works)
+                if (auto ec = driver.sourceManager.addUserDirectories(value)) {
+                    std::cerr << "Warning: include directory '" << value << "': " << ec.message() << std::endl;
+                }
+                // Also capture for propagation to xmrEliminate
+                driverOptions.includeDirs.push_back(std::string(value));
+                return "";
+            },
+            "Additional include search paths", "<dir-pattern>[,...]", slang::CommandLineFlags::CommaList);
+
+        driver.cmdLine.add(
+            "--isystem",
+            [this](std::string_view value) {
+                if (auto ec = driver.sourceManager.addSystemDirectories(value)) {
+                    std::cerr << "Warning: system include directory '" << value << "': " << ec.message() << std::endl;
+                }
+                driverOptions.systemIncludeDirs.push_back(std::string(value));
+                return "";
+            },
+            "Additional system include search paths", "<dir-pattern>[,...]", slang::CommandLineFlags::CommaList);
+
+        // Override define handler to capture them
+        driver.cmdLine.add("-D,--define-macro,+define", driver.options.defines, "Define <macro> to <value> (or 1 if <value> ommitted) in all source files", "<macro>=<value>");
+
+        driver.cmdLine.add("-U,--undefine-macro", driver.options.undefines, "Undefine macro name at the start of all source files", "<macro>", slang::CommandLineFlags::CommaList);
 
         // Add XMR elimination specific arguments
         driver.cmdLine.add("-o,--output", outputDir, "Output directory for modified files", "<dir>");
@@ -130,6 +163,10 @@ class XMREliminatorCLI {
         std::sort(inputFiles.begin(), inputFiles.end());
         inputFiles.erase(std::unique(inputFiles.begin(), inputFiles.end()), inputFiles.end());
 
+        // Capture defines and undefines from parsed options
+        driverOptions.defines   = driver.options.defines;
+        driverOptions.undefines = driver.options.undefines;
+
         // Parse module list
         std::vector<std::string> modules;
         if (moduleList.has_value()) {
@@ -153,6 +190,18 @@ class XMREliminatorCLI {
                 std::cout << std::endl;
             }
             std::cout << "Output directory: " << outputDir.value_or(".xmrEliminate") << std::endl;
+            if (!driverOptions.includeDirs.empty()) {
+                std::cout << "Include directories:" << std::endl;
+                for (const auto &dir : driverOptions.includeDirs) {
+                    std::cout << "  " << dir << std::endl;
+                }
+            }
+            if (!driverOptions.defines.empty()) {
+                std::cout << "Defines:" << std::endl;
+                for (const auto &def : driverOptions.defines) {
+                    std::cout << "  " << def << std::endl;
+                }
+            }
         }
 
         // Configure XMR elimination
@@ -162,6 +211,7 @@ class XMREliminatorCLI {
         config.clockName      = clockName.value_or("clk");
         config.resetName      = resetName.value_or("rst_n");
         config.resetActiveLow = !resetActiveHigh.value_or(false);
+        config.driverOptions  = driverOptions; // Pass driver options to xmrEliminate
 
         // Check if output verification is requested
         auto checkOutputEnv = std::getenv("CHECK_OUTPUT");

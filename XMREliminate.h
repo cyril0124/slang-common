@@ -101,6 +101,32 @@ struct XMRPipeRegConfig {
 };
 
 /**
+ * @brief Driver options for slang compilation
+ *
+ * These options are passed to the internal slang Driver when processing files.
+ * This allows passing include directories, defines, and other slang options.
+ */
+struct DriverOptions {
+    /// Include directories for header file lookup (-I)
+    std::vector<std::string> includeDirs;
+
+    /// System include directories (--isystem)
+    std::vector<std::string> systemIncludeDirs;
+
+    /// Preprocessor defines (-D)
+    std::vector<std::string> defines;
+
+    /// Preprocessor undefines (-U)
+    std::vector<std::string> undefines;
+
+    /// Library directories for module lookup (-y)
+    std::vector<std::string> libDirs;
+
+    /// Library file extensions (+libext)
+    std::vector<std::string> libExts;
+};
+
+/**
  * @brief Configuration for XMR elimination
  */
 struct XMREliminateConfig {
@@ -124,6 +150,9 @@ struct XMREliminateConfig {
 
     /// Whether to check output files by recompiling them with slang
     bool checkOutput = false;
+
+    /// Driver options (include dirs, defines, etc.)
+    DriverOptions driverOptions;
 };
 
 /**

@@ -427,6 +427,29 @@ XMREliminateResult xmrEliminate(const std::vector<std::string> &inputFiles, cons
     slang_common::Driver driver("XMREliminator");
     driver.addStandardArgs();
 
+    // Apply driver options from config (include dirs, defines, etc.)
+    const auto &driverOpts = config.driverOptions;
+    for (const auto &dir : driverOpts.includeDirs) {
+        driver.driver.sourceManager.addUserDirectories(dir);
+        driver.getEmptySourceManager().addUserDirectories(dir);
+    }
+    for (const auto &dir : driverOpts.systemIncludeDirs) {
+        driver.driver.sourceManager.addSystemDirectories(dir);
+        driver.getEmptySourceManager().addSystemDirectories(dir);
+    }
+    for (const auto &def : driverOpts.defines) {
+        driver.driver.options.defines.push_back(def);
+    }
+    for (const auto &undef : driverOpts.undefines) {
+        driver.driver.options.undefines.push_back(undef);
+    }
+    for (const auto &dir : driverOpts.libDirs) {
+        driver.driver.sourceLoader.addSearchDirectories(dir);
+    }
+    for (const auto &ext : driverOpts.libExts) {
+        driver.driver.sourceLoader.addSearchExtension(ext);
+    }
+
     std::vector<std::string> backupFiles;
 
     driver.addFiles(const_cast<std::vector<std::string> &>(inputFiles));
@@ -664,6 +687,28 @@ XMREliminateResult xmrEliminate(const std::vector<std::string> &inputFiles, cons
 
         slang_common::Driver checkDriver("CheckDriver");
         checkDriver.addStandardArgs();
+
+        // Apply driver options from config (include dirs, defines, etc.)
+        for (const auto &dir : driverOpts.includeDirs) {
+            checkDriver.driver.sourceManager.addUserDirectories(dir);
+            checkDriver.getEmptySourceManager().addUserDirectories(dir);
+        }
+        for (const auto &dir : driverOpts.systemIncludeDirs) {
+            checkDriver.driver.sourceManager.addSystemDirectories(dir);
+            checkDriver.getEmptySourceManager().addSystemDirectories(dir);
+        }
+        for (const auto &def : driverOpts.defines) {
+            checkDriver.driver.options.defines.push_back(def);
+        }
+        for (const auto &undef : driverOpts.undefines) {
+            checkDriver.driver.options.undefines.push_back(undef);
+        }
+        for (const auto &dir : driverOpts.libDirs) {
+            checkDriver.driver.sourceLoader.addSearchDirectories(dir);
+        }
+        for (const auto &ext : driverOpts.libExts) {
+            checkDriver.driver.sourceLoader.addSearchExtension(ext);
+        }
 
         // Add output files to check driver
         std::vector<std::string> outputFiles;
