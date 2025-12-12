@@ -139,7 +139,7 @@ module top(
     input clk,
     output wire result
 );
-    wire __xmr__u_sub_sig;
+    logic __xmr__u_sub_sig;
     sub u_sub(
         .__xmr__u_sub_sig(__xmr__u_sub_sig));
     assign result = __xmr__u_sub_sig;

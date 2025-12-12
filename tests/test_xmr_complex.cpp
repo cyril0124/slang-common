@@ -44,9 +44,9 @@ module top(
     output wire out2,
     output wire out3
 );
-    wire __xmr__u_sub1_sig_a;
-    wire __xmr__u_sub1_sig_b;
-    wire __xmr__u_sub2_sig_a;
+    logic __xmr__u_sub1_sig_a;
+    logic __xmr__u_sub1_sig_b;
+    logic __xmr__u_sub2_sig_a;
     sub u_sub1(
         .__xmr__u_sub1_sig_a(__xmr__u_sub1_sig_a),
         .__xmr__u_sub1_sig_b(__xmr__u_sub1_sig_b));
@@ -93,8 +93,8 @@ module top(
     input clk,
     output wire result
 );
-    wire __xmr__u_sub1_data;
-    wire __xmr__u_sub2_data;
+    logic __xmr__u_sub1_data;
+    logic __xmr__u_sub2_data;
     sub u_sub1(
         .__xmr__u_sub1_data(__xmr__u_sub1_data));
     sub u_sub2(
@@ -140,7 +140,7 @@ endmodule
 module top(
     output wire result
 );
-    wire __xmr__u_l1_u_l2_u_l3_deep_signal;
+    logic __xmr__u_l1_u_l2_u_l3_deep_signal;
     level1 u_l1(
         .__xmr__u_l1_u_l2_u_l3_deep_signal(__xmr__u_l1_u_l2_u_l3_deep_signal));
     assign result = __xmr__u_l1_u_l2_u_l3_deep_signal;
@@ -186,7 +186,7 @@ endmodule
 module top(
     output wire [31:0] data_out
 );
-    wire [31:0] __xmr__u_sub_wide_bus;
+    logic [31:0] __xmr__u_sub_wide_bus;
     sub u_sub(
         .__xmr__u_sub_wide_bus(__xmr__u_sub_wide_bus));
     assign data_out = __xmr__u_sub_wide_bus;
@@ -234,7 +234,7 @@ module top(
     input rst_n,
     output reg result
 );
-    wire __xmr__u_sub_data;
+    logic __xmr__u_sub_data;
     sub u_sub(
         .__xmr__u_sub_data(__xmr__u_sub_data));
     always @(posedge clk or negedge rst_n) begin
@@ -275,8 +275,8 @@ module top(
     input sel,
     output wire result
 );
-    wire __xmr__u_sub_a_data;
-    wire __xmr__u_sub_b_data;
+    logic __xmr__u_sub_a_data;
+    logic __xmr__u_sub_b_data;
     sub u_sub_a(
         .__xmr__u_sub_a_data(__xmr__u_sub_a_data));
     sub u_sub_b(
@@ -317,7 +317,7 @@ endmodule
 module top(
     output wire [7:0] result
 );
-    wire [7:0] __xmr__u_sub_byte_data;
+    logic [7:0] __xmr__u_sub_byte_data;
     sub u_sub(
         .__xmr__u_sub_byte_data(__xmr__u_sub_byte_data));
     function automatic logic [7:0] invert_byte;
@@ -362,7 +362,7 @@ module top(
     input clk,
     output reg [1:0] state
 );
-    wire [1:0] __xmr__u_ctrl_mode;
+    logic [1:0] __xmr__u_ctrl_mode;
     ctrl u_ctrl(
         .__xmr__u_ctrl_mode(__xmr__u_ctrl_mode));
     always @(posedge clk) begin

@@ -19,17 +19,17 @@ module tb_formal(
     input clk,
     input rst_n
 );
-    wire [3:0] __xmr__u_dut_u_fifo_wr_ptr;
-    wire [3:0] __xmr__u_dut_u_fifo_rd_ptr;
-    wire __xmr__u_dut_u_proc_valid;
-    wire [7:0] __xmr__u_dut_u_proc_data_out;
-    wire [1:0] __xmr__u_dut_u_ctrl_state;
-    wire __xmr__u_dut_u_ctrl_req;
-    wire __xmr__u_dut_u_ctrl_ack;
-    wire __xmr__u_dut_u_proc_enable;
-    wire [7:0] __xmr__u_dut_u_proc_counter;
-    wire __xmr__u_dut_u_fifo_full;
-    wire __xmr__u_dut_u_fifo_empty;
+    logic [3:0] __xmr__u_dut_u_fifo_wr_ptr;
+    logic [3:0] __xmr__u_dut_u_fifo_rd_ptr;
+    logic __xmr__u_dut_u_proc_valid;
+    logic [7:0] __xmr__u_dut_u_proc_data_out;
+    logic [1:0] __xmr__u_dut_u_ctrl_state;
+    logic __xmr__u_dut_u_ctrl_req;
+    logic __xmr__u_dut_u_ctrl_ack;
+    logic __xmr__u_dut_u_proc_enable;
+    logic [7:0] __xmr__u_dut_u_proc_counter;
+    logic __xmr__u_dut_u_fifo_full;
+    logic __xmr__u_dut_u_fifo_empty;
     // Instantiate DUT
     dut u_dut(.clk(clk), .rst_n(rst_n),
         .__xmr__u_dut_u_fifo_wr_ptr(__xmr__u_dut_u_fifo_wr_ptr),

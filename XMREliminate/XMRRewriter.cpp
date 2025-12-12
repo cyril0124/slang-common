@@ -48,7 +48,9 @@ void XMRRewriterFirst::handle(const slang::syntax::ModuleDeclarationSyntax &synt
     bool hasWires   = (wiresIt != changes.wiresToAdd.end() && !wiresIt->second.empty());
 
     if (hasPorts || hasAssigns || hasWires) {
-        // Add wire declarations at the beginning of the module
+        // Add logic declarations at the beginning of the module
+        // We use 'logic' instead of 'wire' because XMR signals may be used in procedural contexts
+        // (e.g., as output arguments to DPI function calls inside always blocks)
         if (hasWires) {
             for (const auto &wire : wiresIt->second) {
                 // Only add if this wire is not also a port (avoid duplicate declarations)
@@ -63,7 +65,7 @@ void XMRRewriterFirst::handle(const slang::syntax::ModuleDeclarationSyntax &synt
                 }
                 if (!isPort) {
                     std::string widthSpec = (wire.bitWidth > 1) ? fmt::format("[{}:0] ", wire.bitWidth - 1) : "";
-                    insertAtFront(syntax.members, parse(fmt::format("\n    wire {}{};", widthSpec, wire.wireName)));
+                    insertAtFront(syntax.members, parse(fmt::format("\n    logic {}{};", widthSpec, wire.wireName)));
                 }
             }
         }

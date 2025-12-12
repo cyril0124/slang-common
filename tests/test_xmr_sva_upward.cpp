@@ -157,14 +157,14 @@ module tb_formal(
     input clk,
     input rst_n
 );
-    wire [7:0] __xmr__u_dut_u_fifo_ctrl_wr_ptr;
-    wire [7:0] __xmr__u_dut_u_fifo_ctrl_rd_ptr;
-    wire __xmr__u_dut_u_datapath_valid;
-    wire [31:0] __xmr__u_dut_u_datapath_data;
-    wire [1:0] __xmr__u_dut_u_ctrl_state;
-    wire __xmr__u_dut_u_ctrl_req;
-    wire __xmr__u_dut_u_ctrl_ack;
-    wire __xmr__u_dut_u_fifo_ctrl_full;
+    logic [7:0] __xmr__u_dut_u_fifo_ctrl_wr_ptr;
+    logic [7:0] __xmr__u_dut_u_fifo_ctrl_rd_ptr;
+    logic __xmr__u_dut_u_datapath_valid;
+    logic [31:0] __xmr__u_dut_u_datapath_data;
+    logic [1:0] __xmr__u_dut_u_ctrl_state;
+    logic __xmr__u_dut_u_ctrl_req;
+    logic __xmr__u_dut_u_ctrl_ack;
+    logic __xmr__u_dut_u_fifo_ctrl_full;
     // Instantiate DUT
     dut u_dut(.clk(clk), .rst_n(rst_n),
         .__xmr__u_dut_u_fifo_ctrl_wr_ptr(__xmr__u_dut_u_fifo_ctrl_wr_ptr),

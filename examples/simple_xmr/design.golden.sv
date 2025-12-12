@@ -6,7 +6,7 @@ module top(
     input wire rst_n,
     output wire result
 );
-    wire __xmr__u_sub_internal_signal;
+    logic __xmr__u_sub_internal_signal;
     // Instantiate sub-module
     sub_module u_sub(
         .clk(clk),

@@ -6,7 +6,7 @@ module top(
     input wire rst_n,
     output wire [7:0] data_out
 );
-    wire [7:0] __xmr__u_mid_u_bottom_counter_value;
+    logic [7:0] __xmr__u_mid_u_bottom_counter_value;
     // Instantiate mid-level module
     mid_module u_mid(
         .clk(clk),
@@ -24,7 +24,7 @@ module mid_module(
     input wire rst_n,
     output wire [7:0] __xmr__u_mid_u_bottom_counter_value
 );
-    wire [7:0] __xmr__u_bottom_counter_value;
+    logic [7:0] __xmr__u_bottom_counter_value;
     // Instantiate bottom-level module
     bottom_module u_bottom(
         .clk(clk),

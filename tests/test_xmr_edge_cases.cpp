@@ -56,8 +56,8 @@ endmodule
 
     const std::string expected = R"(
 module top;
-    wire __xmr__u_a_data;
-    wire __xmr__u_b_data;
+    logic __xmr__u_a_data;
+    logic __xmr__u_b_data;
     sub_a u_a(
         .__xmr__u_a_data(__xmr__u_a_data));
     sub_b u_b(
@@ -114,7 +114,7 @@ endmodule
 
     const std::string expected = R"(
 module top;
-    wire __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
+    logic __xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data;
     level1 u_l1(
         .__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data(__xmr__u_l1_u_l2_u_l3_u_l4_u_l5_deep_data));
     wire result;
@@ -198,7 +198,7 @@ endmodule
 
     const std::string expected = R"(
 module top;
-    wire __xmr__u_sub_shared_signal;
+    logic __xmr__u_sub_shared_signal;
     sub u_sub(
         .__xmr__u_sub_shared_signal(__xmr__u_sub_shared_signal));
     wire out1, out2, out3;
@@ -232,7 +232,7 @@ endmodule
 
     const std::string expected = R"(
 module top;
-    wire __xmr__u_sub_special_my_signal_123;
+    logic __xmr__u_sub_special_my_signal_123;
     sub u_sub_special(
         .__xmr__u_sub_special_my_signal_123(__xmr__u_sub_special_my_signal_123));
     wire out;
@@ -272,7 +272,7 @@ endmodule
 module top(
     output wire result
 );
-    wire [7:0] __xmr__u_sub_data;
+    logic [7:0] __xmr__u_sub_data;
     sub u_sub(
         .__xmr__u_sub_data(__xmr__u_sub_data));
     assign result = __xmr__u_sub_data[0];
@@ -306,7 +306,7 @@ endmodule
 module top(
     output wire [3:0] result
 );
-    wire [7:0] __xmr__u_sub_data;
+    logic [7:0] __xmr__u_sub_data;
     sub u_sub(
         .__xmr__u_sub_data(__xmr__u_sub_data));
     assign result = __xmr__u_sub_data[7:4];

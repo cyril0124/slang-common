@@ -104,7 +104,7 @@ module top(
     input rst_n,
     output wire result
 );
-    wire __xmr__u_sub_fast_signal;
+    logic __xmr__u_sub_fast_signal;
     sub u_sub(.clk(clk), .rst_n(rst_n),
         .__xmr__u_sub_fast_signal(__xmr__u_sub_fast_signal));
     assign result = __xmr__u_sub_fast_signal;
@@ -179,7 +179,7 @@ module top(
     input rst_n,
     output wire [7:0] result
 );
-    wire [7:0] __xmr__u_sub_data_bus;
+    logic [7:0] __xmr__u_sub_data_bus;
     sub u_sub(.clk(clk), .rst_n(rst_n),
         .__xmr__u_sub_data_bus(__xmr__u_sub_data_bus));
     assign result = __xmr__u_sub_data_bus;
@@ -440,7 +440,7 @@ module top(
     input rst_n,
     output wire result
 );
-    wire __xmr__u_sub_fast_signal;
+    logic __xmr__u_sub_fast_signal;
     sub u_sub(.clk(clk), .rst_n(rst_n),
         .__xmr__u_sub_fast_signal(__xmr__u_sub_fast_signal));
     assign result = __xmr__u_sub_fast_signal;

@@ -9,7 +9,7 @@ module top(
     output wire status_bit,
     output wire [3:0] partial_data
 );
-    wire [7:0] __xmr__u_sub_counter;
+    logic [7:0] __xmr__u_sub_counter;
     // Instantiate sub-module
     sub_module u_sub(
         .clk(clk),
