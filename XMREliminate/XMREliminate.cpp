@@ -410,9 +410,10 @@ XMREliminateResult xmrEliminate(const std::vector<std::string> &inputFiles, cons
     //==========================================================================
     // Step 2: Determine output directory and create work directory
     //==========================================================================
+    // outputDir should already be an absolute path (handled by caller)
     std::string actualOutputDir = outputDir;
     if (actualOutputDir.empty()) {
-        actualOutputDir = ".xmrEliminate";
+        actualOutputDir = std::filesystem::absolute(".xmrEliminate").string();
     }
 
     std::string workDir = actualOutputDir + "/.work";

@@ -64,8 +64,11 @@ class XMREliminatorCLI {
     // Input files (collected from positional args)
     std::vector<std::string> inputFiles;
 
+    // Original working directory - saved before any slang processing changes it
+    std::string originalCwd;
+
   public:
-    XMREliminatorCLI() {
+    XMREliminatorCLI() : originalCwd(fs::current_path().string()) {
         // Add standard slang arguments (includes file handling, etc.)
         driver.addStandardArgs();
 
@@ -188,7 +191,14 @@ class XMREliminatorCLI {
             std::cout << "\nRunning XMR elimination..." << std::endl;
         }
 
-        auto result = slang_common::xmr::xmrEliminate(inputFiles, config, outputDir.value_or(".xmrEliminate"));
+        // Compute absolute output directory using original cwd (before slang changed it)
+        std::string actualOutputDir = outputDir.value_or(".xmrEliminate");
+        if (!fs::path(actualOutputDir).is_absolute()) {
+            actualOutputDir = originalCwd + "/" + actualOutputDir;
+        }
+        actualOutputDir = fs::weakly_canonical(actualOutputDir).string();
+
+        auto result = slang_common::xmr::xmrEliminate(inputFiles, config, actualOutputDir);
 
         // Report results
         if (!result.success()) {

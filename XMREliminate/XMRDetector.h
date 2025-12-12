@@ -10,6 +10,7 @@
 #include "../XMREliminate.h"
 #include "slang/ast/ASTVisitor.h"
 #include "slang/ast/Compilation.h"
+#include "slang/ast/expressions/CallExpression.h"
 
 #include <set>
 #include <unordered_set>
@@ -32,9 +33,13 @@ class XMRDetector : public slang::ast::ASTVisitor<XMRDetector, true, true> {
     slang::ast::Compilation &compilation;
     std::set<std::string> processedXMRs;
 
+    /// Set of syntax nodes for XMRs used as DPI output arguments
+    std::set<const slang::syntax::SyntaxNode *> outputArgXMRs;
+
     XMRDetector(slang::ast::Compilation &comp, const std::vector<std::string> &modules);
 
     void handle(const slang::ast::InstanceSymbol &inst);
+    void handle(const slang::ast::CallExpression &call);
     void handle(const slang::ast::HierarchicalValueExpression &expr);
 };
 

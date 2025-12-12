@@ -116,6 +116,17 @@ XMRChangeSet computeXMRChanges(const std::vector<XMRInfo> &xmrInfos, slang::ast:
         processedXMRs.insert(xmrKey);
 
         /*
+         * Handle self-reference XMRs (e.g., top.clock referenced from top)
+         * These have empty pathSegments after filtering out the self-reference prefix.
+         * For these, we just replace the XMR with the signal name directly - no ports needed.
+         */
+        if (xmr.pathSegments.empty()) {
+            // Self-reference: just replace XMR with the signal name
+            changes.xmrReplacements[{xmr.sourceModule, xmr.fullPath}] = xmr.targetSignal;
+            continue;
+        }
+
+        /*
          * Extract base path and array suffix from XMR path.
          * E.g., "u_sub.data[3]" -> basePath="u_sub.data", arraySuffix="[3]"
          */
@@ -285,14 +296,16 @@ XMRChangeSet computeXMRChanges(const std::vector<XMRInfo> &xmrInfos, slang::ast:
             conn.signalName     = portName;
             changes.connectionChanges.push_back(conn);
 
-            // For intermediate modules, add output port to pass through
+            // For intermediate modules, add port to pass through
+            // For read XMRs: output ports (signal flows up from target to source)
+            // For write XMRs: input ports (signal flows down from source to target)
             if (i < xmr.pathSegments.size() - 1) {
-                PortChange outPort;
-                outPort.moduleName = instModuleName;
-                outPort.portName   = portName;
-                outPort.direction  = "output";
-                outPort.bitWidth   = xmr.bitWidth;
-                changes.portsToAdd[instModuleName].push_back(outPort);
+                PortChange passPort;
+                passPort.moduleName = instModuleName;
+                passPort.portName   = portName;
+                passPort.direction  = xmr.isWrite ? "input" : "output";
+                passPort.bitWidth   = xmr.bitWidth;
+                changes.portsToAdd[instModuleName].push_back(passPort);
             }
 
             currentModule = instModuleName;
@@ -305,18 +318,36 @@ XMRChangeSet computeXMRChanges(const std::vector<XMRInfo> &xmrInfos, slang::ast:
             hasPipelineRegs = pipeConfigIt->second.isEnabled();
         }
 
-        // Add output port and assign in target module
+        // Add port and assign in target module
+        // For write XMRs (DPI output args): input port, assign target = port
+        // For read XMRs: output port, assign port = target
         if (!xmr.targetModule.empty()) {
             PortChange tgtPort;
             tgtPort.moduleName     = xmr.targetModule;
             tgtPort.portName       = portName;
-            tgtPort.direction      = "output";
             tgtPort.bitWidth       = xmr.bitWidth;
             tgtPort.signalToAssign = xmr.targetSignal;
-            changes.portsToAdd[xmr.targetModule].push_back(tgtPort);
 
-            if (!hasPipelineRegs) {
-                changes.assignsToAdd[xmr.targetModule].push_back(fmt::format("assign {} = {};", portName, xmr.targetSignal));
+            if (xmr.isWrite) {
+                // Write XMR: DPI output argument writes to target signal
+                // Need input port in target module to receive the value
+                tgtPort.direction = "input";
+                changes.portsToAdd[xmr.targetModule].push_back(tgtPort);
+
+                if (!hasPipelineRegs) {
+                    // Assign from port to target signal (write direction)
+                    changes.assignsToAdd[xmr.targetModule].push_back(fmt::format("assign {} = {};", xmr.targetSignal, portName));
+                }
+            } else {
+                // Read XMR: source module reads from target signal
+                // Need output port in target module to provide the value
+                tgtPort.direction = "output";
+                changes.portsToAdd[xmr.targetModule].push_back(tgtPort);
+
+                if (!hasPipelineRegs) {
+                    // Assign from target signal to port (read direction)
+                    changes.assignsToAdd[xmr.targetModule].push_back(fmt::format("assign {} = {};", portName, xmr.targetSignal));
+                }
             }
         }
 
